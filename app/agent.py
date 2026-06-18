@@ -15,19 +15,29 @@
 
 import datetime
 from zoneinfo import ZoneInfo
+import os
+from dotenv import load_dotenv
 
-from google.adk.agents import Agent
+# Load env variables from .env if present
+load_dotenv()
+
+from google.adk.agents import LlmAgent
 from google.adk.apps import App
 from google.adk.models import Gemini
+from google.adk.workflow import Workflow
 from google.genai import types
 
-import os
-import google.auth
+# Setup Google Cloud/Vertex AI settings conditionally
+use_vertex = os.environ.get("GOOGLE_GENAI_USE_VERTEXAI", "False").lower() in ("true", "1", "yes")
 
-_, project_id = google.auth.default()
-os.environ["GOOGLE_CLOUD_PROJECT"] = project_id
-os.environ["GOOGLE_CLOUD_LOCATION"] = "global"
-os.environ["GOOGLE_GENAI_USE_VERTEXAI"] = "True"
+if use_vertex:
+    import google.auth
+    try:
+        _, project_id = google.auth.default()
+        os.environ.setdefault("GOOGLE_CLOUD_PROJECT", project_id)
+    except Exception:
+        pass
+    os.environ.setdefault("GOOGLE_CLOUD_LOCATION", "global")
 
 
 def get_weather(query: str) -> str:
@@ -63,8 +73,9 @@ def get_current_time(query: str) -> str:
     return f"The current time for query {query} is {now.strftime('%Y-%m-%d %H:%M:%S %Z%z')}"
 
 
-root_agent = Agent(
-    name="root_agent",
+# Define the core LLM Agent
+weather_agent = LlmAgent(
+    name="weather_agent",
     model=Gemini(
         model="gemini-flash-latest",
         retry_options=types.HttpRetryOptions(attempts=3),
@@ -73,7 +84,14 @@ root_agent = Agent(
     tools=[get_weather, get_current_time],
 )
 
+# Root agent is a Workflow graph routing START -> weather_agent
+root_agent = Workflow(
+    name="root_agent",
+    edges=[('START', weather_agent)],
+)
+
 app = App(
     root_agent=root_agent,
     name="app",
 )
+
