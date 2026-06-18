@@ -18,8 +18,8 @@ from fastapi import FastAPI
 from google.adk.cli.fast_api import get_fast_api_app
 from google.cloud import logging as google_cloud_logging
 
-from app.app_utils.telemetry import setup_telemetry
-from app.app_utils.typing import Feedback
+from expense_agent.app_utils.telemetry import setup_telemetry
+from expense_agent.app_utils.typing import Feedback
 
 from dotenv import load_dotenv
 
@@ -79,7 +79,10 @@ def collect_feedback(feedback: Feedback) -> dict[str, str]:
     Returns:
         Success message
     """
-    logger.log_struct(feedback.model_dump(), severity="INFO")
+    if hasattr(logger, "log_struct"):
+        logger.log_struct(feedback.model_dump(), severity="INFO")
+    else:
+        logger.info(f"Feedback: {feedback.model_dump()}")
     return {"status": "success"}
 
 

@@ -12,27 +12,34 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import json
 from google.adk.agents.run_config import RunConfig, StreamingMode
 from google.adk.runners import Runner
 from google.adk.sessions import InMemorySessionService
 from google.genai import types
 
-from app.agent import root_agent
+from expense_agent.agent import root_agent
 
 
-def test_agent_stream() -> None:
-    """
-    Integration test for the agent stream functionality.
-    Tests that the agent returns valid streaming responses.
-    """
-
+def test_agent_auto_approve() -> None:
+    """Tests that expenses under $100 are automatically approved instantly."""
     session_service = InMemorySessionService()
+    session = session_service.create_session_sync(user_id="test_user", app_name="expense_agent")
+    runner = Runner(agent=root_agent, session_service=session_service, app_name="expense_agent")
 
-    session = session_service.create_session_sync(user_id="test_user", app_name="test")
-    runner = Runner(agent=root_agent, session_service=session_service, app_name="test")
+    expense_payload = {
+        "data": {
+            "amount": 45.50,
+            "submitter": "Alice",
+            "category": "Office Supplies",
+            "description": "Notebooks and pens",
+            "date": "2026-06-18"
+        }
+    }
 
     message = types.Content(
-        role="user", parts=[types.Part.from_text(text="Why is the sky blue?")]
+        role="user",
+        parts=[types.Part.from_text(text=json.dumps(expense_payload))]
     )
 
     events = list(
@@ -43,15 +50,93 @@ def test_agent_stream() -> None:
             run_config=RunConfig(streaming_mode=StreamingMode.SSE),
         )
     )
-    assert len(events) > 0, "Expected at least one message"
 
-    has_text_content = False
+    assert len(events) > 0, "Expected events from the workflow run"
+
+    # Find the final event and check that it auto-approved
+    has_approval = False
     for event in events:
-        if (
-            event.content
-            and event.content.parts
-            and any(part.text for part in event.content.parts)
-        ):
-            has_text_content = True
+        if event.output and isinstance(event.output, dict):
+            if event.output.get("status") == "approved" and event.output.get("decision_by") == "system":
+                has_approval = True
+                assert event.output.get("amount") == 45.50
+                break
+
+    assert has_approval, f"Expected system auto-approval event. Got: {[e.output for e in events]}"
+
+
+def test_agent_human_review_and_approve() -> None:
+    """Tests that expenses >= $100 require human review and can be approved."""
+    session_service = InMemorySessionService()
+    session = session_service.create_session_sync(user_id="test_user", app_name="expense_agent")
+    runner = Runner(agent=root_agent, session_service=session_service, app_name="expense_agent")
+
+    expense_payload = {
+        "data": {
+            "amount": 250.00,
+            "submitter": "Bob",
+            "category": "Travel",
+            "description": "Hotel stay for conference",
+            "date": "2026-06-18"
+        }
+    }
+
+    message = types.Content(
+        role="user",
+        parts=[types.Part.from_text(text=json.dumps(expense_payload))]
+    )
+
+    # First run: should trigger the human_review RequestInput/pause
+    events1 = list(
+        runner.run(
+            new_message=message,
+            user_id="test_user",
+            session_id=session.id,
+            run_config=RunConfig(streaming_mode=StreamingMode.SSE),
+        )
+    )
+
+    assert len(events1) > 0
+
+    # Ensure the workflow has interrupted/paused and generated a RequestInput for "human_approval"
+    has_request_input = False
+    for event in events1:
+        if event.long_running_tool_ids and "human_approval" in event.long_running_tool_ids:
+            has_request_input = True
             break
-    assert has_text_content, "Expected at least one message with text content"
+
+    assert has_request_input, "Expected workflow to pause for human approval"
+
+    # Resume the workflow by supplying the human approval response
+    resume_message = types.Content(
+        role="user",
+        parts=[
+            types.Part(
+                function_response=types.FunctionResponse(
+                    id="human_approval",
+                    response={"human_approval": "approve"}
+                )
+            )
+        ]
+    )
+
+    events2 = list(
+        runner.run(
+            new_message=resume_message,
+            user_id="test_user",
+            session_id=session.id,
+            run_config=RunConfig(streaming_mode=StreamingMode.SSE),
+        )
+    )
+
+    # Ensure final output is approved by human
+    has_human_approval = False
+    for event in events2:
+        if event.output and isinstance(event.output, dict):
+            if event.output.get("status") == "approved" and event.output.get("decision_by") == "human":
+                has_human_approval = True
+                assert event.output.get("amount") == 250.00
+                assert event.output.get("risk_rating") in ("low", "medium", "high")
+                break
+
+    assert has_human_approval, f"Expected final event to be approved by human. Got: {[e.output for e in events2]}"

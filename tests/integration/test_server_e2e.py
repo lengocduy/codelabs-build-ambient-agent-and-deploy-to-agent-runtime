@@ -49,7 +49,7 @@ def start_server() -> subprocess.Popen[str]:
         sys.executable,
         "-m",
         "uvicorn",
-        "app.fast_api_app:app",
+        "expense_agent.fast_api_app:app",
         "--host",
         "0.0.0.0",
         "--port",
@@ -119,7 +119,7 @@ def test_chat_stream(server_fixture: subprocess.Popen[str]) -> None:
     user_id = "test_user_123"
     session_data = {"state": {"preferred_language": "English", "visit_count": 1}}
 
-    session_url = f"{BASE_URL}/apps/app/users/{user_id}/sessions"
+    session_url = f"{BASE_URL}/apps/expense_agent/users/{user_id}/sessions"
     session_response = requests.post(
         session_url,
         headers=HEADERS,
@@ -130,14 +130,24 @@ def test_chat_stream(server_fixture: subprocess.Popen[str]) -> None:
     logger.info(f"Session creation response: {session_response.json()}")
     session_id = session_response.json()["id"]
 
-    # Then send chat message
+    # Then send chat message (using an expense under $100 for auto-approval test)
+    import json
+    expense_payload = {
+        "data": {
+            "amount": 45.50,
+            "submitter": "Alice",
+            "category": "Office Supplies",
+            "description": "Notebooks and pens",
+            "date": "2026-06-18"
+        }
+    }
     data = {
-        "app_name": "app",
+        "app_name": "expense_agent",
         "user_id": user_id,
         "session_id": session_id,
         "new_message": {
             "role": "user",
-            "parts": [{"text": "Hi!"}],
+            "parts": [{"text": json.dumps(expense_payload)}],
         },
         "streaming": True,
     }

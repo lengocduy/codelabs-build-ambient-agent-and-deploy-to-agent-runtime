@@ -20,3 +20,31 @@ local authentication in a .env file — I'll use either a Google AI Studio API k
 or my own Google Cloud project; configure whichever applies and tell
 me if there's a gcloud command I need to run and also where to obtain the API keys from.
 ```
+
+## Prompt 3: Build the stateful graph core
+
+The routing rules:
+- `< $100` → `auto_approve` (a plain function node, no LLM).
+- `>= $100` → `an LLM review_agent` analyzes risk, then a human-in-the-loop node pauses the workflow for a human via ADK 2.0's RequestInput.
+
+```text
+I'm building an ambient expense-approval agent as an ADK 2.0 graph workflow — use
+the new Workflow graph API (function nodes wired together by edges, with
+RequestInput for the human-in-the-loop step), not the 1.x SequentialAgent /
+LlmAgent style.
+
+Here's the behavior I want:
+An expense report arrives as a JSON event — the
+details sit under a "data" key that might be base64-encoded (real Pub/Sub) or
+plain JSON (local testing). The agent pulls out the expense (amount, submitter,
+category, description, date), then applies one rule:
+  - Under $100 → auto-approve instantly, no LLM involved.
+  - $100 or more → an LLM reviews it for risk factors and raises an alert, then
+    the workflow pauses for a human to approve or reject; once they decide,
+    record the outcome.
+
+Keep the dollar threshold and the routing in python code — the model is only there
+for the risk judgment. Put the threshold and the model (gemini-3.1-flash-lite)
+in a config, and the agent under expense_agent/.  Then walk me through the graph
+you wired up step by step, highlighing the code I should be paying attention to.
+```
