@@ -67,3 +67,16 @@ two things:
 Clean expenses should continue on to the LLM reviewer. Show me how this checkpoint
 slots into the graph.
 ```
+
+## Prompt 5: Simplify local development setup
+
+```text
+Give me a Makefile (install, open the playground) and a pyproject.toml so I
+can run everything locally on ADK 2.0. Install dependencies, then run
+"make playground" in the background to launch the UI. Once the playground is
+running, send the following test expense payload to verify the workflow:
+
+{"amount": 150.0, "submitter": "alice@company.com", "category": "software", "description": "IDE License", "date": "2026-06-06"}
+
+Explain how I can check the UI to observe the human-in-the-loop flow.
+```
