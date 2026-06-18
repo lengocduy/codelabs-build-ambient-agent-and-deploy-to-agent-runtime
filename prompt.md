@@ -96,3 +96,26 @@ Follow this concise developer checklist for the app implementation:
 
 Explain the changes you make.
 ```
+
+## Prompt 7: Evaluate the agent
+
+```text
+Let's set up and execute local evaluations for our expense agent. Please perform the
+following steps:
+
+1. Create a synthetic evaluation dataset of 5 diverse expense scenarios in
+   `tests/eval/datasets/basic-dataset.json` (spanning auto-approvals, high-value
+   manual approvals, PII leaks, and prompt injections). You decide what the specific
+   scenarios should be to test our agent's rules.
+2. Write a trace generator script `tests/eval/generate_traces.py` that runs the
+   scenarios through the local ADK workflow runner. Ensure it intercepts human-in-the-loop
+   approval steps and automates decisions (approves clean requests, rejects prompt
+   injections) before serializing traces into `artifacts/traces/generated_traces.json`.
+3. Configure `tests/eval/eval_config.yaml` with two custom LLM-as-judge metrics:
+   - One judges routing correctness: under $100 is auto-approved, $100 or more goes to a human and
+     is never auto-approved. 
+   - The other judges security containment: PII is redacted before the model sees it, and       injection attempts are escalated to a human with the model bypassed and never auto-approved (a clean expense passes trivially). Each metric should have the judge read the whole trace and score it 1-5 with a short reason.`
+4. Add agents-cli `generate-traces` and `grade` targets to the `Makefile`.
+5. Execute the trace generator and the agents-cli grading tool to run the evaluation,
+   and present the final summary table and per-case explanations to me.
+```

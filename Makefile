@@ -17,6 +17,14 @@ run:
 test:
 	uv run pytest tests/unit tests/integration
 
+# Generate traces for evaluation
+generate-traces:
+	uv run python tests/eval/generate_traces.py
+
+# Grade the generated traces
+grade:
+	agents-cli eval grade --traces artifacts/traces/generated_traces.json --config tests/eval/eval_config.yaml
+
 # Clean up build artifacts and caches
 clean:
 	rm -rf .pytest_cache .venv
