@@ -80,3 +80,19 @@ running, send the following test expense payload to verify the workflow:
 
 Explain how I can check the UI to observe the human-in-the-loop flow.
 ```
+
+## Prompt 6: Make it ambient event-driven AI agent
+
+```text
+Make this agent ambient so events drive it instead of a chat. Stand it up as a
+local web service that accepts Pub/Sub trigger messages and feeds each one into
+the workflow, serving on port 8080. One gotcha to handle: Pub/Sub sends a
+fully-qualified subscription path, so normalize it down to a short name to keep
+session records readable. Verify the existing pyproject.toml to ensure fastapi is configured, and tell me how to run the makefile.
+
+Follow this concise developer checklist for the app implementation:
+- Telemetry: Set otel_to_cloud=False
+- Logging: Use standard Python logging for console logs.
+
+Explain the changes you make.
+```

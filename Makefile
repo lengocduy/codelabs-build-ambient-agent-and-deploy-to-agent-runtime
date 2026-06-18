@@ -9,6 +9,10 @@ install:
 playground:
 	agents-cli playground --port=8080
 
+# Run the ambient web service locally on default port 8080. Customize if conflicts with other apps
+run:
+	PORT=8080 uv run python -m expense_agent.fast_api_app
+
 # Run unit and integration tests
 test:
 	uv run pytest tests/unit tests/integration
