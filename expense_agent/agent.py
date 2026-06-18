@@ -165,6 +165,98 @@ async def auto_approve(node_input: dict) -> AsyncGenerator[Event, None]:
     yield Event(output=result)
 
 
+import re
+
+SSN_REGEX = re.compile(r'\b\d{3}-\d{2}-\d{4}\b')
+# Matches 16-digit numbers (possibly with spaces or hyphens)
+CREDIT_CARD_REGEX = re.compile(r'\b\d{4}[- ]\d{4}[- ]\d{4}[- ]\d{4}\b|\b\d{16}\b')
+
+
+def scrub_pii(text: str) -> tuple[str, list[str]]:
+    """Scrubs SSNs and Credit Card numbers from text and returns categories redacted."""
+    redacted = []
+    
+    if SSN_REGEX.search(text):
+        text = SSN_REGEX.sub("[REDACTED SSN]", text)
+        redacted.append("SSN")
+        
+    if CREDIT_CARD_REGEX.search(text):
+        text = CREDIT_CARD_REGEX.sub("[REDACTED CREDIT CARD]", text)
+        redacted.append("Credit Card")
+        
+    return text, redacted
+
+
+# Prompt Injection Defense configuration
+PROMPT_INJECTION_KEYWORDS = [
+    "ignore previous instructions",
+    "ignore all instructions",
+    "bypass rules",
+    "bypass the rules",
+    "force auto-approve",
+    "force approval",
+    "auto-approve this",
+    "override threshold",
+    "override rules",
+    "system prompt",
+    "you must approve",
+    "ignore constraints",
+    "override constraints",
+    "ignore policy",
+    "override policy",
+    "override limit",
+    "ignore limit"
+]
+
+
+def detect_prompt_injection(text: str) -> bool:
+    """Detects simple keyword-based prompt injection attempts."""
+    text_lower = text.lower()
+    return any(kw in text_lower for kw in PROMPT_INJECTION_KEYWORDS)
+
+
+@node
+def security_checkpoint(ctx: Context, node_input: dict) -> Event:
+    """Security node to scrub PII and defend against prompt injection."""
+    expense = ExpenseReport(**node_input)
+    
+    # 1. Scrub PII from description
+    scrubbed_desc, redacted_categories = scrub_pii(expense.description)
+    expense.description = scrubbed_desc
+    expense_dict = expense.model_dump()
+    
+    # 2. Defend against prompt injection
+    has_injection = detect_prompt_injection(scrubbed_desc)
+    
+    if has_injection:
+        # Construct default risk review payload alerting security issue
+        alert_review = {
+            "risk_rating": "high",
+            "risk_factors": ["Security Alert: Prompt Injection Detected"],
+            "explanation": f"WARNING: Potential prompt-injection attempt detected in description: '{scrubbed_desc}'"
+        }
+        return Event(
+            output=alert_review,
+            route="alert",
+            state={
+                "expense": expense_dict,
+                "redacted_categories": redacted_categories,
+                "security_event": True
+            }
+        )
+    else:
+        # Continue to LLM reviewer
+        return Event(
+            output=expense_dict,
+            route="clean",
+            state={
+                "expense": expense_dict,
+                "redacted_categories": redacted_categories,
+                "security_event": False
+            }
+        )
+
+
 # Define risk review LLM Agent Node
 review_risk = LlmAgent(
     name="review_risk",
@@ -197,11 +289,17 @@ async def human_review(ctx: Context, node_input: RiskReview) -> AsyncGenerator[E
     
     # Check if the human has responded yet
     if not ctx.resume_inputs or "human_approval" not in ctx.resume_inputs:
+        is_security_event = ctx.state.get("security_event", False)
+        alert_header = "🚨 SECURITY ALERT" if is_security_event else "⚠️ ALERT"
+        
+        redacted = ctx.state.get("redacted_categories", [])
+        redacted_msg = f" (Redacted PII: {', '.join(redacted)})" if redacted else ""
+        
         msg = (
-            f"⚠️ ALERT: Expense of ${expense.amount:.2f} requires human approval!\n"
+            f"{alert_header}: Expense of ${expense.amount:.2f} requires human approval!\n"
             f"- Submitter: {expense.submitter}\n"
             f"- Category: {expense.category}\n"
-            f"- Description: {expense.description}\n"
+            f"- Description: {expense.description}{redacted_msg}\n"
             f"- Date: {expense.date}\n\n"
             f"Risk Analysis:\n"
             f"- Risk Rating: {node_input.risk_rating.upper()}\n"
@@ -256,7 +354,8 @@ root_agent = Workflow(
     name="root_agent",
     edges=[
         ('START', parse_event),
-        (parse_event, {"approve": auto_approve, "review": review_risk}),
+        (parse_event, {"approve": auto_approve, "review": security_checkpoint}),
+        (security_checkpoint, {"clean": review_risk, "alert": human_review}),
         (review_risk, human_review),
     ]
 )
@@ -265,5 +364,3 @@ app = App(
     root_agent=root_agent,
     name="expense_agent",
 )
-
-

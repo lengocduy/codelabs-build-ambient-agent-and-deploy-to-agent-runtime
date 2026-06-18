@@ -48,3 +48,22 @@ for the risk judgment. Put the threshold and the model (gemini-3.1-flash-lite)
 in a config, and the agent under expense_agent/.  Then walk me through the graph
 you wired up step by step, highlighing the code I should be paying attention to.
 ```
+
+## Prompt 4: Add security - PII redaction & prompt-injection defense
+
+```text
+Let's add security controls to the graph. Before any expense reaches the LLM
+reviewer, add a security checkpoint to the graph that does
+two things:
+
+  1. Scrub personal data from the description — SSNs and credit-card numbers must
+     never reach the model or the logs, and the human-approval payload should be
+     clean too. Remember which categories you redacted.
+  2. Defend against prompt injection — if the description is stuffed with
+     instructions trying to force an auto-approval or bypass the rules, don't let
+     the model see it at all: route it straight to a human for review and flag it
+     as a security event.
+
+Clean expenses should continue on to the LLM reviewer. Show me how this checkpoint
+slots into the graph.
+```
