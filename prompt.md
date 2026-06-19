@@ -132,3 +132,9 @@ cloudbuild.googleapis.com, agentregistry.googleapis.com).
 ```
 
 > Replace `YOUR_PROJECT_ID` with your actual Google Cloud Project ID.
+
+## Prompt 9: Prepare for Production Deployment
+
+```text
+Scaffold the production deployment files for Agent Runtime.
+```
