@@ -119,3 +119,16 @@ following steps:
 5. Execute the trace generator and the agents-cli grading tool to run the evaluation,
    and present the final summary table and per-case explanations to me.
 ```
+
+## Prompt 8: Set up Google Cloud Environment to deploy to Agent Runtime
+
+Agent Runtime is a fully managed Google Cloud service that lets you deploy, manage, and scale AI agents in production. Agent Runtime handles the operational complexities of hosting, offering a stateful environment with features like session management, long-term memory, and secure code execution sandboxes.
+
+```text
+Help me set up my Google Cloud environment. Connect to my project
+`YOUR_PROJECT_ID` in the global region, authenticate, and enable the necessary
+generative platform APIs (aiplatform.googleapis.com, cloudtrace.googleapis.com,
+cloudbuild.googleapis.com, agentregistry.googleapis.com).
+```
+
+> Replace `YOUR_PROJECT_ID` with your actual Google Cloud Project ID.
