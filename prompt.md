@@ -138,3 +138,33 @@ cloudbuild.googleapis.com, agentregistry.googleapis.com).
 ```text
 Scaffold the production deployment files for Agent Runtime.
 ```
+
+## Prompt 10: Packaging and Local Verification
+
+```text
+Lock my python dependencies and run a dry-run deployment to check for any
+configuration or dependency issues.
+```
+
+## Prompt 11: Deploy to Agent Runtim
+
+```text
+Deploy this agent to Agent Runtime.
+```
+
+## Prompt 12: Test the production deployment
+
+```text
+Test my deployed Agent Runtime engine with two test cases: first a standard
+meal expense of $50 to verify automatic approval, and second, a client dinner
+expense of $150 to verify that the human-in-the-loop pause is triggered.
+```
+
+## Prompt 13: Clean up the deployment to prevent incurring charges
+
+```text
+Clean up all my deployed cloud resources. Use the Agent Runtime ID from
+deployment_metadata.json to delete the engine from Vertex AI, remove the local
+deployment_metadata.json file, and delete the container image repository from
+Artifact Registry.
+```
