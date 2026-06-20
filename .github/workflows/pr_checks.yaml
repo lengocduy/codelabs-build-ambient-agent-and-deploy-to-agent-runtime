@@ -31,6 +31,10 @@ jobs:
     permissions:
       contents: 'read'
       id-token: 'write'
+    env:
+      GOOGLE_GENAI_USE_VERTEXAI: 'true'
+      GOOGLE_CLOUD_PROJECT: '${{ vars.CICD_PROJECT_ID }}'
+      GOOGLE_CLOUD_LOCATION: '${{ vars.REGION }}'
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
