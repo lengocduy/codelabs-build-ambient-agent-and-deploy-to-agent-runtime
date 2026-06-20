@@ -16,8 +16,8 @@
 resource "google_bigquery_dataset" "telemetry_dataset" {
   for_each      = local.deploy_project_ids
   project       = each.value
-  dataset_id    = replace("${var.project_name}_telemetry", "-", "_")
-  friendly_name = "${var.project_name} Telemetry"
+  dataset_id    = replace("${var.project_name}_telemetry_${each.key}", "-", "_")
+  friendly_name = "${var.project_name} Telemetry (${each.key})"
   location      = var.region
   description   = "Dataset for GenAI telemetry data stored in GCS"
   depends_on    = [resource.google_project_service.cicd_services, resource.google_project_service.deploy_project_services]
@@ -28,8 +28,8 @@ resource "google_bigquery_connection" "genai_telemetry_connection" {
   for_each      = local.deploy_project_ids
   project       = each.value
   location      = var.region
-  connection_id = "${var.project_name}-genai-telemetry"
-  friendly_name = "${var.project_name} GenAI Telemetry Connection"
+  connection_id = "${var.project_name}-genai-telemetry-${each.key}"
+  friendly_name = "${var.project_name} GenAI Telemetry Connection (${each.key})"
 
   cloud_resource {}
 
@@ -62,7 +62,7 @@ resource "google_storage_bucket_iam_member" "telemetry_connection_access" {
 # Log sink to route GenAI telemetry logs directly to BigQuery
 resource "google_logging_project_sink" "genai_logs_to_bq" {
   for_each    = local.deploy_project_ids
-  name        = "${var.project_name}-genai-logs"
+  name        = "${var.project_name}-genai-logs-${each.key}"
   project     = each.value
   destination = "bigquery.googleapis.com/projects/${each.value}/datasets/${google_bigquery_dataset.telemetry_dataset[each.key].dataset_id}"
   filter      = "log_name=\"projects/${each.value}/logs/gen_ai.client.inference.operation.details\" AND (labels.\"gen_ai.input.messages_ref\" =~ \".*${var.project_name}.*\" OR labels.\"gen_ai.output.messages_ref\" =~ \".*${var.project_name}.*\")"
@@ -79,7 +79,7 @@ resource "google_logging_project_sink" "genai_logs_to_bq" {
 # Log sink for user feedback logs — routes to the same BigQuery dataset
 resource "google_logging_project_sink" "feedback_logs_to_bq" {
   for_each    = local.deploy_project_ids
-  name        = "${var.project_name}-feedback"
+  name        = "${var.project_name}-feedback-${each.key}"
   project     = each.value
   destination = "bigquery.googleapis.com/projects/${each.value}/datasets/${google_bigquery_dataset.telemetry_dataset[each.key].dataset_id}"
   filter      = var.feedback_logs_filter
