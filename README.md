@@ -73,13 +73,38 @@ Edit your agent logic in `app/agent.py` and test with `agents-cli playground` - 
 
 ## Deployment
 
+### Manual Deployment
+To deploy the reasoning engine manually to Vertex AI Agent Runtime:
 ```bash
 gcloud config set project <your-project-id>
 agents-cli deploy
 ```
 
-To add CI/CD and Terraform, run `agents-cli scaffold enhance`.
-To set up your production infrastructure, run `agents-cli infra cicd`.
+### CI/CD Deployment with GitHub Actions
+This project is configured with an automated multi-environment CI/CD pipeline under `.github/workflows/` using Workload Identity Federation (WIF) and Terraform.
+
+#### 1. Setup Infrastructure
+To provision GCP IAM, Workload Identity Federation, telemetry datasets, log sinks, and automatically write GitHub Action secrets/variables:
+```bash
+agents-cli infra cicd \
+  --cicd-runner github_actions \
+  --staging-project <gcp-project-id> \
+  --prod-project <gcp-project-id> \
+  --region us-east1 \
+  --repository-owner <github-owner> \
+  --repository-name <github-repo> \
+  --github-pat <your-github-pat> \
+  --apply
+```
+
+#### 2. CI/CD Workflows
+- **PR Checks (`pr_checks.yaml`)**: Triggered on pull requests to the `main` branch. Authenticates to Google Cloud via Workload Identity Federation, configures `GOOGLE_GENAI_USE_VERTEXAI` environment variables, and executes unit and integration tests.
+- **Staging Pipeline (`staging.yaml`)**: Triggered on push or merge to the `main` branch.
+  - Automatically builds and deploys the agent to the Staging environment on Vertex AI Agent Runtime.
+  - Runs load/perf tests using Locust and exports results to the GCS bucket.
+- **Production Pipeline (`deploy-to-prod.yaml`)**: Initiated immediately after the Staging pipeline succeeds.
+  - Pauses for manual review/gate approval under GitHub Environment (`production`).
+  - Deploys the agent to the Production environment on Vertex AI Agent Runtime.
 
 ## Observability
 
