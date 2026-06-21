@@ -24,6 +24,7 @@ on:
       - 'tests/**'
       - 'deployment/**'
       - 'uv.lock'
+  workflow_dispatch:
 
 jobs:
   deploy_and_test_staging:
@@ -95,10 +96,11 @@ jobs:
           echo "HTTP link: https://console.cloud.google.com/storage/browser/${{ vars.LOGS_BUCKET_NAME_STAGING }}/load-test-results/results-${TIMESTAMP}"
           echo "_________________________________________________________________________"
 
-  call_production_workflow:
-    needs: deploy_and_test_staging
-    uses: ./.github/workflows/deploy-to-prod.yaml
-    permissions:
-      contents: 'read'
-      id-token: 'write'
-    secrets: inherit
+#   # Uncomment to trigger production deploy automatically after staging checks succeed
+#   call_production_workflow:
+#     needs: deploy_and_test_staging
+#     uses: ./.github/workflows/deploy-to-prod.yaml
+#     permissions:
+#       contents: 'read'
+#       id-token: 'write'
+#     secrets: inherit
