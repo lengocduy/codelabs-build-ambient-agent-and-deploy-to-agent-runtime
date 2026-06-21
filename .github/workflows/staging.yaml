@@ -15,15 +15,16 @@
 name: Deploy to Staging
 
 on:
-  push:
-    branches:
-      - main
-    paths:
-      - 'expense_agent/**'
-      - 'data_ingestion/**'
-      - 'tests/**'
-      - 'deployment/**'
-      - 'uv.lock'
+  # Uncomment if we want to deploy on staging from main branch
+  # push:
+  #   branches:
+  #     - main
+  #   paths:
+  #     - 'expense_agent/**'
+  #     - 'data_ingestion/**'
+  #     - 'tests/**'
+  #     - 'deployment/**'
+  #     - 'uv.lock'
   workflow_dispatch:
 
 jobs:
