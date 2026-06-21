@@ -127,7 +127,38 @@ If you need to configure your repository manually via the GitHub setting console
 
 > 💡 **How it is simplified:** The `agents-cli infra cicd` script automates this completely. It first provisions these GCP resources (WIF pool, providers, datasets, service accounts, and buckets) via Terraform, and then uses the GitHub API via your PAT token to write these 3 secrets and 9 variables automatically.
 
-#### 4. WIF Authentication Flow & Citations
+#### 4. Cleanup & Teardown (Undeploying Resources)
+To avoid unnecessary charges and clean up unused resources, you can tear down both environments.
+
+##### Option A: Automated Cleanup (Recommended)
+You can trigger the teardown process directly from the GitHub Actions console:
+1. Go to your GitHub repository and select the **Actions** tab.
+2. Select **Teardown Infrastructure** in the left sidebar.
+3. Click the **Run workflow** dropdown, and click the green **Run workflow** button.
+
+This workflow will automatically:
+- Discover and delete all deployed Vertex AI Reasoning Engines (`ambient-expense-agent`) in both your staging and production environments.
+- Run `terraform destroy` to tear down all WIF pools, providers, GCS buckets, service accounts, and logging sinks.
+
+##### Option B: Manual Command Line Cleanup
+If you prefer to perform the teardown manually in your local terminal:
+
+1. **Delete Vertex AI Reasoning Engines**:
+   ```bash
+   # Undeploy Staging Engine
+   gcloud beta ai reasoning-engines delete <STAGE_ENGINE_ID> --project=<STAGE_PROJECT_ID> --region=us-east1 --quiet
+
+   # Undeploy Production Engine
+   gcloud beta ai reasoning-engines delete <PROD_ENGINE_ID> --project=<PROD_PROJECT_ID> --region=us-east1 --quiet
+   ```
+2. **Destroy Terraform Infrastructure**:
+   Navigate to the `cicd` directory and run:
+   ```bash
+   cd deployment/terraform/cicd
+   terraform destroy -var-file=vars/env.tfvars -auto-approve
+   ```
+
+#### 5. WIF Authentication Flow & Citations
 
 ```mermaid
 sequenceDiagram
