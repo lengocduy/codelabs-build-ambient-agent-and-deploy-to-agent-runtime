@@ -54,11 +54,20 @@ class ChatStreamUser(HttpUser):
         """Simulates a chat stream interaction."""
         headers = {"Content-Type": "application/json"}
         headers["Authorization"] = f"Bearer {os.environ['_AUTH_TOKEN']}"
+        expense_payload = {
+            "data": {
+                "amount": 45.50,
+                "submitter": "Alice",
+                "category": "Office Supplies",
+                "description": "Locust load test sample",
+                "date": "2026-06-18"
+            }
+        }
         data = {
             "class_method": "async_stream_query",
             "input": {
                 "user_id": "test",
-                "message": "Hi!",
+                "message": json.dumps(expense_payload),
             },
         }
         start_time = time.time()
