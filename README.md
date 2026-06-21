@@ -134,15 +134,15 @@ sequenceDiagram
     autonumber
     participant GH as GitHub Actions Workflow<br/>(your-owner/your-repo)
     participant OIDC as GitHub OIDC Service
-    participant WIF as GCP Workload Identity Provider<br/>(Pool/Provider)
-    participant IAM as GCP IAM Service
+    participant STS as GCP Security Token Service<br/>(WIF STS API)
+    participant IAM as GCP IAM Credentials Service
     participant SA as GCP Service Account<br/>(ambient-expense-agent-cb)
 
     GH->>OIDC: 1. Request JWT token for this workflow run
     OIDC->>GH: 2. Return signed OIDC JWT<br/>(Contains claims: job_id, repository="owner/repo", etc.)
-    GH->>WIF: 3. Present GitHub JWT to GCP WIF
-    Note over WIF: 4. Validates GitHub's signature & checks:<br/>attribute.repository == 'owner/repo'
-    WIF->>GH: 5. Return short-lived GCP Federated Token
+    GH->>STS: 3. Present GitHub JWT to WIF STS API
+    Note over STS: 4. Validates GitHub's signature & checks:<br/>attribute.repository == 'owner/repo'
+    STS->>GH: 5. Return short-lived GCP Federated Token (STS)
     GH->>IAM: 6. Request access token for Service Account (impersonation)
     Note over IAM: 7. Checks Service Account IAM policy:<br/>Does principalSet allow owner/repo?
     IAM->>GH: 8. Return short-lived Service Account Access Token<br/>(Valid for 1 hour)
