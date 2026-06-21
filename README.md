@@ -127,6 +127,33 @@ If you need to configure your repository manually via the GitHub setting console
 
 > 💡 **How it is simplified:** The `agents-cli infra cicd` script automates this completely. It first provisions these GCP resources (WIF pool, providers, datasets, service accounts, and buckets) via Terraform, and then uses the GitHub API via your PAT token to write these 3 secrets and 9 variables automatically.
 
+#### 4. WIF Authentication Flow & Citations
+
+```mermaid
+sequenceDiagram
+    autonumber
+    participant GH as GitHub Actions Workflow<br/>(your-owner/your-repo)
+    participant OIDC as GitHub OIDC Service
+    participant WIF as GCP Workload Identity Provider<br/>(Pool/Provider)
+    participant IAM as GCP IAM Service
+    participant SA as GCP Service Account<br/>(ambient-expense-agent-cb)
+
+    GH->>OIDC: 1. Request JWT token for this workflow run
+    OIDC->>GH: 2. Return signed OIDC JWT<br/>(Contains claims: job_id, repository="owner/repo", etc.)
+    GH->>WIF: 3. Present GitHub JWT to GCP WIF
+    Note over WIF: 4. Validates GitHub's signature & checks:<br/>attribute.repository == 'owner/repo'
+    WIF->>GH: 5. Return short-lived GCP Federated Token
+    GH->>IAM: 6. Request access token for Service Account (impersonation)
+    Note over IAM: 7. Checks Service Account IAM policy:<br/>Does principalSet allow owner/repo?
+    IAM->>GH: 8. Return short-lived Service Account Access Token<br/>(Valid for 1 hour)
+    GH->>SA: 9. Use access token to deploy agent/run tests in Vertex AI
+```
+
+##### References & Citations
+* Official GitHub Action authentication guide: [google-github-actions/auth Github Repository](https://github.com/google-github-actions/auth)
+* Official GCP authentication setup documentation: [GCP Workload Identity Federation with GitHub Actions Guide](https://cloud.google.com/iam/docs/workload-identity-federation-with-other-providers#github-actions)
+
+
 
 ## Observability
 
