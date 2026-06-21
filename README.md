@@ -106,6 +106,28 @@ agents-cli infra cicd \
   - Pauses for manual review/gate approval under GitHub Environment (`production`).
   - Deploys the agent to the Production environment on Vertex AI Agent Runtime.
 
+#### 3. GitHub Secrets & Variables (Manual Reference)
+If you need to configure your repository manually via the GitHub setting console, you must add the following under **Settings > Secrets and variables > Actions**:
+
+##### Repository Secrets
+* `WIF_POOL_ID`: The ID of the Workload Identity Pool created in GCP (e.g., `ambient-expense-agent-pool`).
+* `WIF_PROVIDER_ID`: The ID of the OIDC Provider created in the pool (e.g., `ambient-expense-agent-oidc`).
+* `GCP_SERVICE_ACCOUNT`: The email of the CI/CD runner service account that GitHub Actions will impersonate.
+
+##### Repository Variables
+* `GCP_PROJECT_NUMBER`: The numeric ID of the Google Cloud Project hosting the WIF pool.
+* `CICD_PROJECT_ID`: The GCP Project ID hosting WIF and CI/CD operations.
+* `STAGING_PROJECT_ID`: The GCP Project ID used for the Staging environment.
+* `PROD_PROJECT_ID`: The GCP Project ID used for the Production environment.
+* `REGION`: The default GCP region for Vertex AI Agent Runtime (e.g., `us-east1`).
+* `APP_SERVICE_ACCOUNT_STAGING`: Service account email running the agent in Staging.
+* `APP_SERVICE_ACCOUNT_PROD`: Service account email running the agent in Production.
+* `LOGS_BUCKET_NAME_STAGING`: GCS bucket name where Staging log/telemetry artifacts are written.
+* `LOGS_BUCKET_NAME_PROD`: GCS bucket name where Production log/telemetry artifacts are written.
+
+> 💡 **How it is simplified:** The `agents-cli infra cicd` script automates this completely. It first provisions these GCP resources (WIF pool, providers, datasets, service accounts, and buckets) via Terraform, and then uses the GitHub API via your PAT token to write these 3 secrets and 9 variables automatically.
+
+
 ## Observability
 
 Built-in telemetry exports to Cloud Trace, BigQuery, and Cloud Logging.
