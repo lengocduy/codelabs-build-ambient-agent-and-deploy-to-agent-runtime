@@ -49,43 +49,67 @@ jobs:
           project_id: ${{ vars.CICD_PROJECT_ID }}
 
       - name: Set up Cloud SDK
-        uses: 'google-github-actions/setup-gcloud@v2'
+        uses: 'google-github-actions/setup-gcloud@v3'
         with:
           install_components: 'beta'
 
       - name: Undeploy Staging Vertex AI Reasoning Engines
         if: github.event.inputs.target_env == 'staging_only' || github.event.inputs.target_env == 'all'
         run: |
-          echo "Listing and deleting Staging reasoning engines for ambient-expense-agent..."
-          STAGING_ENGINES=$(gcloud beta ai reasoning-engines list \
-            --project="${{ vars.STAGING_PROJECT_ID }}" \
-            --region="${{ vars.REGION }}" \
-            --filter="displayName:ambient-expense-agent" \
-            --format="value(name)")
-          for ENGINE in $STAGING_ENGINES; do
-            echo "Deleting Staging Reasoning Engine: $ENGINE"
-            gcloud beta ai reasoning-engines delete "$ENGINE" \
-              --project="${{ vars.STAGING_PROJECT_ID }}" \
-              --region="${{ vars.REGION }}" \
-              --quiet || true
-          done
+          python3 - <<'EOF'
+          import urllib.request, urllib.error, json, os
+          token = os.popen('gcloud auth print-access-token').read().strip()
+          project = '${{ vars.STAGING_PROJECT_ID }}'
+          region = '${{ vars.REGION }}'
+          url = f"https://{region}-aiplatform.googleapis.com/v1/projects/{project}/locations/{region}/reasoningEngines"
+          req = urllib.request.Request(url, headers={"Authorization": f"Bearer {token}"})
+          try:
+              with urllib.request.urlopen(req) as response:
+                  data = json.loads(response.read().decode('utf-8'))
+                  for engine in data.get('reasoningEngines', []):
+                      name = engine['name']
+                      display_name = engine.get('displayName', '')
+                      if display_name == 'ambient-expense-agent':
+                          print(f"Deleting Staging Reasoning Engine: {name}")
+                          del_url = f"https://{region}-aiplatform.googleapis.com/v1/{name}"
+                          del_req = urllib.request.Request(del_url, method='DELETE', headers={"Authorization": f"Bearer {token}"})
+                          with urllib.request.urlopen(del_req) as del_resp:
+                              del_resp.read()
+          except urllib.error.HTTPError as e:
+              if e.code != 404:
+                  print(f"HTTP Error: {e.code} - {e.reason}")
+          except Exception as e:
+              print(f"Error: {e}")
+          EOF
 
       - name: Undeploy Production Vertex AI Reasoning Engines
         if: github.event.inputs.target_env == 'production_only' || github.event.inputs.target_env == 'all'
         run: |
-          echo "Listing and deleting Production reasoning engines for ambient-expense-agent..."
-          PROD_ENGINES=$(gcloud beta ai reasoning-engines list \
-            --project="${{ vars.PROD_PROJECT_ID }}" \
-            --region="${{ vars.REGION }}" \
-            --filter="displayName:ambient-expense-agent" \
-            --format="value(name)")
-          for ENGINE in $PROD_ENGINES; do
-            echo "Deleting Production Reasoning Engine: $ENGINE"
-            gcloud beta ai reasoning-engines delete "$ENGINE" \
-              --project="${{ vars.PROD_PROJECT_ID }}" \
-              --region="${{ vars.REGION }}" \
-              --quiet || true
-          done
+          python3 - <<'EOF'
+          import urllib.request, urllib.error, json, os
+          token = os.popen('gcloud auth print-access-token').read().strip()
+          project = '${{ vars.PROD_PROJECT_ID }}'
+          region = '${{ vars.REGION }}'
+          url = f"https://{region}-aiplatform.googleapis.com/v1/projects/{project}/locations/{region}/reasoningEngines"
+          req = urllib.request.Request(url, headers={"Authorization": f"Bearer {token}"})
+          try:
+              with urllib.request.urlopen(req) as response:
+                  data = json.loads(response.read().decode('utf-8'))
+                  for engine in data.get('reasoningEngines', []):
+                      name = engine['name']
+                      display_name = engine.get('displayName', '')
+                      if display_name == 'ambient-expense-agent':
+                          print(f"Deleting Production Reasoning Engine: {name}")
+                          del_url = f"https://{region}-aiplatform.googleapis.com/v1/{name}"
+                          del_req = urllib.request.Request(del_url, method='DELETE', headers={"Authorization": f"Bearer {token}"})
+                          with urllib.request.urlopen(del_req) as del_resp:
+                              del_resp.read()
+          except urllib.error.HTTPError as e:
+              if e.code != 404:
+                  print(f"HTTP Error: {e.code} - {e.reason}")
+          except Exception as e:
+              print(f"Error: {e}")
+          EOF
 
       - name: Setup Terraform
         if: github.event.inputs.target_env == 'all'
