@@ -73,13 +73,118 @@ Edit your agent logic in `app/agent.py` and test with `agents-cli playground` - 
 
 ## Deployment
 
+### Manual Deployment
+To deploy the reasoning engine manually to Vertex AI Agent Runtime:
 ```bash
 gcloud config set project <your-project-id>
 agents-cli deploy
 ```
 
-To add CI/CD and Terraform, run `agents-cli scaffold enhance`.
-To set up your production infrastructure, run `agents-cli infra cicd`.
+### CI/CD Deployment with GitHub Actions
+This project is configured with an automated multi-environment CI/CD pipeline under `.github/workflows/` using Workload Identity Federation (WIF) and Terraform.
+
+#### 1. Setup Infrastructure
+To provision GCP IAM, Workload Identity Federation, telemetry datasets, log sinks, and automatically write GitHub Action secrets/variables:
+```bash
+agents-cli infra cicd \
+  --cicd-runner github_actions \
+  --staging-project <gcp-project-id> \
+  --prod-project <gcp-project-id> \
+  --region us-east1 \
+  --repository-owner <github-owner> \
+  --repository-name <github-repo> \
+  --github-pat <your-github-pat> \
+  --apply
+```
+
+#### 2. CI/CD Workflows
+- **PR Checks (`pr_checks.yaml`)**: Triggered on pull requests to the `main` branch. Authenticates to Google Cloud via Workload Identity Federation, configures `GOOGLE_GENAI_USE_VERTEXAI` environment variables, and executes unit and integration tests.
+- **Staging Pipeline (`staging.yaml`)**: Triggered on push or merge to the `main` branch.
+  - Automatically builds and deploys the agent to the Staging environment on Vertex AI Agent Runtime.
+  - Runs load/perf tests using Locust and exports results to the GCS bucket.
+- **Production Pipeline (`deploy-to-prod.yaml`)**: Initiated immediately after the Staging pipeline succeeds.
+  - Pauses for manual review/gate approval under GitHub Environment (`production`).
+  - Deploys the agent to the Production environment on Vertex AI Agent Runtime.
+
+#### 3. GitHub Secrets & Variables (Manual Reference)
+If you need to configure your repository manually via the GitHub setting console, you must add the following under **Settings > Secrets and variables > Actions**:
+
+##### Repository Secrets
+* `WIF_POOL_ID`: The ID of the Workload Identity Pool created in GCP (e.g., `ambient-expense-agent-pool`).
+* `WIF_PROVIDER_ID`: The ID of the OIDC Provider created in the pool (e.g., `ambient-expense-agent-oidc`).
+* `GCP_SERVICE_ACCOUNT`: The email of the CI/CD runner service account that GitHub Actions will impersonate.
+
+##### Repository Variables
+* `GCP_PROJECT_NUMBER`: The numeric ID of the Google Cloud Project hosting the WIF pool.
+* `CICD_PROJECT_ID`: The GCP Project ID hosting WIF and CI/CD operations.
+* `STAGING_PROJECT_ID`: The GCP Project ID used for the Staging environment.
+* `PROD_PROJECT_ID`: The GCP Project ID used for the Production environment.
+* `REGION`: The default GCP region for Vertex AI Agent Runtime (e.g., `us-east1`).
+* `APP_SERVICE_ACCOUNT_STAGING`: Service account email running the agent in Staging.
+* `APP_SERVICE_ACCOUNT_PROD`: Service account email running the agent in Production.
+* `LOGS_BUCKET_NAME_STAGING`: GCS bucket name where Staging log/telemetry artifacts are written.
+* `LOGS_BUCKET_NAME_PROD`: GCS bucket name where Production log/telemetry artifacts are written.
+
+> 💡 **How it is simplified:** The `agents-cli infra cicd` script automates this completely. It first provisions these GCP resources (WIF pool, providers, datasets, service accounts, and buckets) via Terraform, and then uses the GitHub API via your PAT token to write these 3 secrets and 9 variables automatically.
+
+#### 4. Cleanup & Teardown (Undeploying Resources)
+To avoid unnecessary charges and clean up unused resources, you can tear down both environments.
+
+##### Option A: Automated Cleanup (Recommended)
+You can trigger the teardown process directly from the GitHub Actions console:
+1. Go to your GitHub repository and select the **Actions** tab.
+2. Select **Teardown Infrastructure** in the left sidebar.
+3. Click the **Run workflow** dropdown, and click the green **Run workflow** button.
+
+This workflow will automatically:
+- Discover and delete all deployed Vertex AI Reasoning Engines (`ambient-expense-agent`) in both your staging and production environments.
+- Run `terraform destroy` to tear down all WIF pools, providers, GCS buckets, service accounts, and logging sinks.
+
+##### Option B: Manual Command Line Cleanup
+If you prefer to perform the teardown manually in your local terminal:
+
+1. **Delete Vertex AI Reasoning Engines**:
+   ```bash
+   # Undeploy Staging Engine
+   gcloud beta ai reasoning-engines delete <STAGE_ENGINE_ID> --project=<STAGE_PROJECT_ID> --region=us-east1 --quiet
+
+   # Undeploy Production Engine
+   gcloud beta ai reasoning-engines delete <PROD_ENGINE_ID> --project=<PROD_PROJECT_ID> --region=us-east1 --quiet
+   ```
+2. **Destroy Terraform Infrastructure**:
+   Navigate to the `cicd` directory and run:
+   ```bash
+   cd deployment/terraform/cicd
+   terraform destroy -var-file=vars/env.tfvars -auto-approve
+   ```
+
+#### 5. WIF Authentication Flow & Citations
+
+```mermaid
+sequenceDiagram
+    autonumber
+    participant GH as GitHub Actions Workflow<br/>(your-owner/your-repo)
+    participant OIDC as GitHub OIDC Service
+    participant STS as GCP Security Token Service<br/>(WIF STS API)
+    participant IAM as GCP IAM Credentials Service
+    participant SA as GCP Service Account<br/>(ambient-expense-agent-cb)
+
+    GH->>OIDC: 1. Request JWT token for this workflow run
+    OIDC->>GH: 2. Return signed OIDC JWT<br/>(Contains claims: job_id, repository="owner/repo", etc.)
+    GH->>STS: 3. Present GitHub JWT to WIF STS API
+    Note over STS: 4. Validates GitHub's signature & checks:<br/>attribute.repository == 'owner/repo'
+    STS->>GH: 5. Return short-lived GCP Federated Token (STS)
+    GH->>IAM: 6. Request access token for Service Account (impersonation)
+    Note over IAM: 7. Checks Service Account IAM policy:<br/>Does principalSet allow owner/repo?
+    IAM->>GH: 8. Return short-lived Service Account Access Token<br/>(Valid for 1 hour)
+    GH->>SA: 9. Use access token to deploy agent/run tests in Vertex AI
+```
+
+##### References & Citations
+* Official GitHub Action authentication guide: [google-github-actions/auth Github Repository](https://github.com/google-github-actions/auth)
+* Official GCP authentication setup documentation: [GCP Workload Identity Federation with GitHub Actions Guide](https://cloud.google.com/iam/docs/workload-identity-federation-with-other-providers#github-actions)
+
+
 
 ## Observability
 
