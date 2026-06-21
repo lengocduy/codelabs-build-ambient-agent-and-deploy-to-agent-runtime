@@ -16,6 +16,16 @@ name: Teardown Infrastructure
 
 on:
   workflow_dispatch:
+    inputs:
+      target_env:
+        description: 'What do you want to clean up?'
+        required: true
+        default: 'all'
+        type: choice
+        options:
+          - all
+          - staging_only
+          - production_only
 
 jobs:
   teardown:
@@ -44,6 +54,7 @@ jobs:
           install_components: 'beta'
 
       - name: Undeploy Staging Vertex AI Reasoning Engines
+        if: github.event.inputs.target_env == 'staging_only' || github.event.inputs.target_env == 'all'
         run: |
           echo "Listing and deleting Staging reasoning engines for ambient-expense-agent..."
           STAGING_ENGINES=$(gcloud beta ai reasoning-engines list \
@@ -60,6 +71,7 @@ jobs:
           done
 
       - name: Undeploy Production Vertex AI Reasoning Engines
+        if: github.event.inputs.target_env == 'production_only' || github.event.inputs.target_env == 'all'
         run: |
           echo "Listing and deleting Production reasoning engines for ambient-expense-agent..."
           PROD_ENGINES=$(gcloud beta ai reasoning-engines list \
@@ -76,14 +88,17 @@ jobs:
           done
 
       - name: Setup Terraform
+        if: github.event.inputs.target_env == 'all'
         uses: hashicorp/setup-terraform@v3
 
       - name: Terraform Init
+        if: github.event.inputs.target_env == 'all'
         run: |
           cd deployment/terraform/cicd
           terraform init
 
       - name: Terraform Destroy
+        if: github.event.inputs.target_env == 'all'
         run: |
           cd deployment/terraform/cicd
           terraform destroy -var-file=vars/env.tfvars -auto-approve
