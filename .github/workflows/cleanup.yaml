@@ -71,7 +71,7 @@ jobs:
                       display_name = engine.get('displayName', '')
                       if display_name == 'ambient-expense-agent':
                           print(f"Deleting Staging Reasoning Engine: {name}")
-                          del_url = f"https://{region}-aiplatform.googleapis.com/v1/{name}"
+                          del_url = f"https://{region}-aiplatform.googleapis.com/v1/{name}?force=true"
                           del_req = urllib.request.Request(del_url, method='DELETE', headers={"Authorization": f"Bearer {token}"})
                           with urllib.request.urlopen(del_req) as del_resp:
                               del_resp.read()
@@ -100,7 +100,7 @@ jobs:
                       display_name = engine.get('displayName', '')
                       if display_name == 'ambient-expense-agent':
                           print(f"Deleting Production Reasoning Engine: {name}")
-                          del_url = f"https://{region}-aiplatform.googleapis.com/v1/{name}"
+                          del_url = f"https://{region}-aiplatform.googleapis.com/v1/{name}?force=true"
                           del_req = urllib.request.Request(del_url, method='DELETE', headers={"Authorization": f"Bearer {token}"})
                           with urllib.request.urlopen(del_req) as del_resp:
                               del_resp.read()
