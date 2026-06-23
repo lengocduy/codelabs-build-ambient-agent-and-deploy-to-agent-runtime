@@ -2,14 +2,16 @@
 
 Keep track the prompts to create this agent
 
-## Prompt 1: Create the project scaffolding
+## Agent's prompts
+
+### Prompt 1: Create the project scaffolding
 
 ```text
 Create a new directory called "ambient-expense-agent", initialize it with the ADK
 starter template and tell me when it is ready.
 ```
 
-## Prompt 2: Set up credentials and graph API
+### Prompt 2: Set up credentials and graph API
 
 ```text
 Load your adk-cheatsheet, adk-scaffold, and google-agents-cli-workflow skills and
@@ -21,7 +23,7 @@ or my own Google Cloud project; configure whichever applies and tell
 me if there's a gcloud command I need to run and also where to obtain the API keys from.
 ```
 
-## Prompt 3: Build the stateful graph core
+### Prompt 3: Build the stateful graph core
 
 The routing rules:
 - `< $100` → `auto_approve` (a plain function node, no LLM).
@@ -49,7 +51,7 @@ in a config, and the agent under expense_agent/.  Then walk me through the graph
 you wired up step by step, highlighing the code I should be paying attention to.
 ```
 
-## Prompt 4: Add security - PII redaction & prompt-injection defense
+### Prompt 4: Add security - PII redaction & prompt-injection defense
 
 ```text
 Let's add security controls to the graph. Before any expense reaches the LLM
@@ -68,7 +70,7 @@ Clean expenses should continue on to the LLM reviewer. Show me how this checkpoi
 slots into the graph.
 ```
 
-## Prompt 5: Simplify local development setup
+### Prompt 5: Simplify local development setup
 
 ```text
 Give me a Makefile (install, open the playground) and a pyproject.toml so I
@@ -81,7 +83,7 @@ running, send the following test expense payload to verify the workflow:
 Explain how I can check the UI to observe the human-in-the-loop flow.
 ```
 
-## Prompt 6: Make it ambient event-driven AI agent
+### Prompt 6: Make it ambient event-driven AI agent
 
 ```text
 Make this agent ambient so events drive it instead of a chat. Stand it up as a
@@ -97,7 +99,7 @@ Follow this concise developer checklist for the app implementation:
 Explain the changes you make.
 ```
 
-## Prompt 7: Evaluate the agent
+### Prompt 7: Evaluate the agent
 
 ```text
 Let's set up and execute local evaluations for our expense agent. Please perform the
@@ -120,7 +122,7 @@ following steps:
    and present the final summary table and per-case explanations to me.
 ```
 
-## Prompt 8: Set up Google Cloud Environment to deploy to Agent Runtime
+### Prompt 8: Set up Google Cloud Environment to deploy to Agent Runtime
 
 Agent Runtime is a fully managed Google Cloud service that lets you deploy, manage, and scale AI agents in production. Agent Runtime handles the operational complexities of hosting, offering a stateful environment with features like session management, long-term memory, and secure code execution sandboxes.
 
@@ -133,26 +135,26 @@ cloudbuild.googleapis.com, agentregistry.googleapis.com).
 
 > Replace `YOUR_PROJECT_ID` with your actual Google Cloud Project ID.
 
-## Prompt 9: Prepare for Production Deployment
+### Prompt 9: Prepare for Production Deployment
 
 ```text
 Scaffold the production deployment files for Agent Runtime.
 ```
 
-## Prompt 10: Packaging and Local Verification
+### Prompt 10: Packaging and Local Verification
 
 ```text
 Lock my python dependencies and run a dry-run deployment to check for any
 configuration or dependency issues.
 ```
 
-## Prompt 11: Deploy to Agent Runtim
+### Prompt 11: Deploy to Agent Runtim
 
 ```text
 Deploy this agent to Agent Runtime.
 ```
 
-## Prompt 12: Test the production deployment
+### Prompt 12: Test the production deployment
 
 ```text
 Test my deployed Agent Runtime engine with two test cases: first a standard
@@ -160,11 +162,30 @@ meal expense of $50 to verify automatic approval, and second, a client dinner
 expense of $150 to verify that the human-in-the-loop pause is triggered.
 ```
 
-## Prompt 13: Clean up the deployment to prevent incurring charges
+### Prompt 13: Clean up the deployment to prevent incurring charges
 
 ```text
 Clean up all my deployed cloud resources. Use the Agent Runtime ID from
 deployment_metadata.json to delete the engine from Vertex AI, remove the local
 deployment_metadata.json file, and delete the container image repository from
 Artifact Registry.
+```
+
+## Frontend's Prompts
+
+### Prompt 1: Setup frontend
+
+```text
+Vibe-code a standalone manager-dashboard service in a new folder
+"submission_frontend/". I want:
+
+  - A FastAPI service with the following endpoints:
+    1. GET /: Serves a beautiful, interactive manager dashboard HTML page. Use Outfit or Inter Google Fonts, sleek glassmorphism styling (dark background, radial glows, cards with backdrop blurs and subtle borders). It should fetch pending approvals from the backend and display them as interactive cards.
+    2. GET /api/pending: Queries the ADK VertexAiSessionService to list all sessions, fetches the full history for each session, and identifies unresolved `adk_request_input` function call events (events requesting input that do not have a corresponding `adk_request_input` function response event). Returns the session ID, interrupt ID, and expense payload details.
+    3. POST /api/action/{session_id}: Resumes the paused session on Agent Runtime. To avoid duplicate parameter errors on the ADK runner, pass the resume payload (with role: user and parts: [function_response: {id: interrupt_id, name: adk_request_input, response: {approved: True/False}}]) directly as the dict value of the `message` argument to the SDK. Also make sure to set the `user_id` strictly to "default-user" to avoid session ownership mismatch errors.
+  - Read the GCP project and AGENT_RUNTIME_ID from environment variables.
+
+  - A pyproject.toml with fastapi, uvicorn, google-adk, and google-cloud-aiplatform.
+
+Make sure the UI looks highly polished and premium (colors, transitions, interactive approve/reject actions with loading spinners, and a modal that slides out to display the agent's final compliance review). Show me the main.py implementation when done.
 ```
