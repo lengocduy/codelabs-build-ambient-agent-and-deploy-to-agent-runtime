@@ -69,7 +69,7 @@ jobs:
             --project ${{ vars.STAGING_PROJECT_ID }} \
             --region ${{ vars.REGION }} \
             --service-account=${{ vars.APP_SERVICE_ACCOUNT_STAGING }} \
-            --update-env-vars="COMMIT_SHA=${{ github.sha }},LOGS_BUCKET_NAME=${{ vars.LOGS_BUCKET_NAME_STAGING }}"
+            --update-env-vars="COMMIT_SHA=${{ github.sha }},LOGS_BUCKET_NAME=${{ vars.LOGS_BUCKET_NAME_STAGING }},GOOGLE_GENAI_USE_VERTEXAI=True,GOOGLE_CLOUD_LOCATION=global"
 
       - name: Fetch Auth Token
         id: fetch-token

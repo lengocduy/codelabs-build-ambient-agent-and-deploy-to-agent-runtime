@@ -205,3 +205,6 @@ tools/a2a-inspector/
 
 # Deployed agent references
 deployment_metadata.json
+
+# SDK/Agent Evaluation Outputs
+/artifacts/

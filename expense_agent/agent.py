@@ -46,7 +46,7 @@ if use_vertex:
         os.environ.setdefault("GOOGLE_CLOUD_PROJECT", project_id)
     except Exception:
         pass
-    os.environ.setdefault("GOOGLE_CLOUD_LOCATION", "global")
+    os.environ["GOOGLE_CLOUD_LOCATION"] = "global"
 
 
 # Pydantic Schemas for validation
