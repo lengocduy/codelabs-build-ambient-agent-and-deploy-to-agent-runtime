@@ -207,3 +207,14 @@ Create the Pub/Sub topics for my event pipeline. I want:
 
 Use gcloud commands. Walk me through each one before you run it.
 ```
+
+### Prompt 4: Wire Pub/Sub to Agent Runtime
+
+```text
+Create the authenticated Pub/Sub push subscription pointing directly to Agent Runtime. I want:
+  1. A service account called "pubsub-invoker" for Pub/Sub push authentication.
+  2. Permission granted to that service account to query and invoke my Agent Runtime agent.
+  3. The OIDC-authenticated push subscription "expense-reports-push" delivering directly to the Agent Runtime's :query REST API, using `--push-no-wrapper` to unwrap the payload, and configured with a 10-minute ack deadline and a dead-letter topic after 5 failed attempts.
+
+Use gcloud commands. Walk me through each one before running.
+```

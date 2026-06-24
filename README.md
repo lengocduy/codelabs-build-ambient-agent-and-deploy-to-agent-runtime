@@ -186,6 +186,56 @@ sequenceDiagram
 
 
 
+## Event Ingestion Pipeline (Pub/Sub Setup)
+
+The asynchronous event ingestion pipeline relies on Google Cloud Pub/Sub to deliver incoming expense events directly to the Agent Runtime:
+
+1.  **Incoming Expense Reports Topic (`expense-reports`)**: Receives JSON payloads representing new expense claims.
+2.  **Dead-Letter Topic (`expense-reports-dead-letter`)**: Captures messages that fail processing repeatedly so they are not lost.
+3.  **OIDC-Authenticated Push Subscription (`expense-reports-push`)**: Delivers payloads directly to the Agent Runtime's `:query` REST endpoint. It runs in unwrapped payload mode (`--push-no-wrapper`) and retries up to 5 times before routing messages to the dead-letter topic.
+
+### Setup Commands
+
+To create the topics, service account, permissions, and push subscription in your GCP project, run the following `gcloud` commands in your terminal:
+
+```bash
+# 1. Create the dead-letter topic
+gcloud pubsub topics create expense-reports-dead-letter --project=<YOUR_PROJECT_ID>
+
+# 2. Create the main incoming topic
+gcloud pubsub topics create expense-reports --project=<YOUR_PROJECT_ID>
+
+# 3. Create the pubsub-invoker service account
+gcloud iam service-accounts create pubsub-invoker \
+  --description="Service account for Pub/Sub push authentication" \
+  --display-name="Pub/Sub Invoker Service Account" \
+  --project=<YOUR_PROJECT_ID>
+
+# 4. Grant the Vertex AI User role to the service account
+gcloud projects add-iam-policy-binding <YOUR_PROJECT_ID> \
+  --member="serviceAccount:pubsub-invoker@<YOUR_PROJECT_ID>.iam.gserviceaccount.com" \
+  --role="roles/aiplatform.user"
+
+# 5. Grant publisher permissions to the Pub/Sub service agent on the dead-letter topic
+gcloud pubsub topics add-iam-policy-binding expense-reports-dead-letter \
+  --member="serviceAccount:service-<YOUR_PROJECT_NUMBER>@gcp-sa-pubsub.iam.gserviceaccount.com" \
+  --role="roles/pubsub.publisher" \
+  --project=<YOUR_PROJECT_ID>
+
+# 6. Create the OIDC push subscription delivering directly to the reasoning engine
+gcloud pubsub subscriptions create expense-reports-push \
+  --topic=expense-reports \
+  --push-endpoint="https://us-east1-aiplatform.googleapis.com/v1/projects/<YOUR_PROJECT_ID>/locations/us-east1/reasoningEngines/<YOUR_REASONING_ENGINE_ID>:query" \
+  --push-no-wrapper \
+  --push-auth-service-account="pubsub-invoker@<YOUR_PROJECT_ID>.iam.gserviceaccount.com" \
+  --push-auth-token-audience="https://us-east1-aiplatform.googleapis.com/v1/projects/<YOUR_PROJECT_ID>/locations/us-east1/reasoningEngines/<YOUR_REASONING_ENGINE_ID>:query" \
+  --ack-deadline=600 \
+  --dead-letter-topic=expense-reports-dead-letter \
+  --max-delivery-attempts=5 \
+  --project=<YOUR_PROJECT_ID>
+```
+
 ## Observability
 
 Built-in telemetry exports to Cloud Trace, BigQuery, and Cloud Logging.
+
