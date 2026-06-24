@@ -46,8 +46,8 @@ allow_origins = (
 logs_bucket_name = os.environ.get("LOGS_BUCKET_NAME")
 
 AGENT_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-# In-memory session configuration - no persistent storage
-session_service_uri = None
+# Read session configuration from env variable (defaulting to None / local storage)
+session_service_uri = os.environ.get("SESSION_SERVICE_URI")
 
 artifact_service_uri = f"gs://{logs_bucket_name}" if logs_bucket_name else None
 

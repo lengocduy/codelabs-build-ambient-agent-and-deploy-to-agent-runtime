@@ -1,5 +1,10 @@
 # Walkthrough: Manager Dashboard Service Implementation
 
+> [!WARNING]
+> **Educational/Demo Use Only**: This walkthrough file was manually copied into the source repository for demonstration purposes to show how AI assistant workspace sessions are documented.
+> **DO NOT commit walkthrough files in real/production projects.** They contain environment-specific resource IDs, service accounts, and deployment URLs which can raise security concerns and leak internal infrastructure configurations.
+
+
 We have successfully created a standalone, fully-functional manager dashboard service in a new directory named `submission_frontend/`.
 
 ## Created Files

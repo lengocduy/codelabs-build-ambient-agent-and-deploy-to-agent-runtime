@@ -110,7 +110,7 @@
                   "role": "model",
                   "parts": [
                     {
-                      "text": "{\n  \"risk_rating\": \"low\",\n  \"risk_factors\": [\n    \"Standard business travel expense\",\n    \"Reasonable amount for hotel stay\",\n    \"Clear business purpose\"\n  ],\n  \"explanation\": \"The expense appears to be a standard, routine business travel cost. The amount of $150 for a hotel stay is reasonable for a conference-related trip, and there are no indicators of policy violation or suspicious activity.\"\n}"
+                      "text": "{\"risk_rating\": \"low\", \"risk_factors\": [\"Standard business travel expense\"], \"explanation\": \"The expense is for a reasonable amount, categorized correctly as travel, and contains a clear business purpose. There are no indications of policy violations or suspicious activity.\"}"
                     },
                     {
                       "text": ""
@@ -129,7 +129,7 @@
                         "args": {
                           "interruptId": "human_approval",
                           "payload": null,
-                          "message": "\u26a0\ufe0f ALERT: Expense of $150.00 requires human approval!\n- Submitter: Bob\n- Category: Travel\n- Description: Hotel stay for conference\n- Date: 2026-06-18\n\nRisk Analysis:\n- Risk Rating: LOW\n- Risk Factors: Standard business travel expense, Reasonable amount for hotel stay, Clear business purpose\n- Explanation: The expense appears to be a standard, routine business travel cost. The amount of $150 for a hotel stay is reasonable for a conference-related trip, and there are no indicators of policy violation or suspicious activity.\n\nDo you approve or reject this expense report? (Type 'approve' or 'reject')",
+                          "message": "\u26a0\ufe0f ALERT: Expense of $150.00 requires human approval!\n- Submitter: Bob\n- Category: Travel\n- Description: Hotel stay for conference\n- Date: 2026-06-18\n\nRisk Analysis:\n- Risk Rating: LOW\n- Risk Factors: Standard business travel expense\n- Explanation: The expense is for a reasonable amount, categorized correctly as travel, and contains a clear business purpose. There are no indications of policy violations or suspicious activity.\n\nDo you approve or reject this expense report? (Type 'approve' or 'reject')",
                           "response_schema": null
                         }
                       }

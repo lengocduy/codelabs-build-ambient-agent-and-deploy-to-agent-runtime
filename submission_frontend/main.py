@@ -2,6 +2,8 @@ import os
 import re
 import logging
 import json
+from dotenv import load_dotenv
+load_dotenv(dotenv_path=os.environ.get("ENV_FILE", ".env"))
 from typing import Optional, Any, List
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.responses import HTMLResponse
@@ -39,6 +41,44 @@ location = os.environ.get("GOOGLE_CLOUD_LOCATION") or "us-east1"
 class ActionPayload(BaseModel):
     approved: bool
     interrupt_id: str
+
+def get_session_service(parsed_project: str, parsed_location: str, engine_id: str):
+    """Factory function to retrieve the appropriate ADK Session Service.
+
+    It selects between a local SQLite-backed storage service and the cloud-based Vertex AI
+    Session Service depending on the environment configuration:
+
+    1. **Local Offline Mode**: Triggered if the environment variable `SESSION_SERVICE_URI` is set
+       and starts with "sqlite://". In this mode, it returns a `SqliteSessionService` reading/writing
+       directly from the local SQLite database.
+    2. **Cloud/Vertex AI Mode**: By default (or when `SESSION_SERVICE_URI` is set to "agentengine://"),
+       it initializes and returns a `VertexAiSessionService` connecting to the reasoning engine on Google Cloud.
+
+    Args:
+        parsed_project: The GCP Project ID (for Vertex AI Cloud mode).
+        parsed_location: The GCP Region (for Vertex AI Cloud mode).
+        engine_id: The Reasoning Engine ID (for Vertex AI Cloud mode).
+
+    Returns:
+        An instance of BaseSessionService (SqliteSessionService or VertexAiSessionService).
+    """
+    uri = os.environ.get("SESSION_SERVICE_URI")
+    if uri and uri.startswith("sqlite://"):
+        db_path = uri.replace("sqlite:///", "").replace("sqlite://", "")
+        if not os.path.isabs(db_path):
+            base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+            db_path = os.path.join(base_dir, db_path)
+        from google.adk.sessions.sqlite_session_service import SqliteSessionService
+        logger.info(f"Using SqliteSessionService at path: {db_path}")
+        return SqliteSessionService(db_path=db_path)
+    else:
+        logger.info(f"Using VertexAiSessionService (Engine: {engine_id})")
+        return VertexAiSessionService(
+            project=parsed_project,
+            location=parsed_location,
+            agent_engine_id=engine_id
+        )
+
 
 @app.get("/api/pending")
 async def get_pending_approvals():
@@ -85,11 +125,7 @@ async def get_pending_approvals():
     logger.info(f"Listing sessions for Engine: {engine_id} in project: {parsed_project}, location: {parsed_location}")
 
     try:
-        session_service = VertexAiSessionService(
-            project=parsed_project,
-            location=parsed_location,
-            agent_engine_id=engine_id
-        )
+        session_service = get_session_service(parsed_project, parsed_location, engine_id)
 
         list_res = await session_service.list_sessions(app_name="expense_agent")
         pending_items = []
@@ -234,11 +270,7 @@ async def handle_action(session_id: str, payload: ActionPayload):
         raise HTTPException(status_code=500, detail="root_agent not loaded from expense_agent package.")
 
     try:
-        session_service = VertexAiSessionService(
-            project=parsed_project,
-            location=parsed_location,
-            agent_engine_id=engine_id
-        )
+        session_service = get_session_service(parsed_project, parsed_location, engine_id)
 
         runner = Runner(
             agent=root_agent,
