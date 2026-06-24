@@ -197,3 +197,13 @@ Deploy the submission_frontend folder as "expense-manager-dashboard" to Cloud Ru
 GOOGLE_CLOUD_PROJECT, and AGENT_RUNTIME_ID as environment variables, and configure the deployment to allow unauthenticated invocations so it is publicly reachable. After it deploys, grant the dashboard's runtime service account the necessary roles on the project so it can resume the Agent
 Runtime agent and query its sessions. Print the Dashboard URL when done.
 ```
+
+### Prompt 3: Build the Pub/Sub topic
+
+```text
+Create the Pub/Sub topics for my event pipeline. I want:
+  1. A Pub/Sub topic called "expense-reports" for incoming expense events.
+  2. A dead-letter topic called "expense-reports-dead-letter" so messages that fail repeatedly don't get lost.
+
+Use gcloud commands. Walk me through each one before you run it.
+```

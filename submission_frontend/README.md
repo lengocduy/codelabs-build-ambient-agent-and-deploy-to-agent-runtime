@@ -103,3 +103,24 @@ gcloud projects add-iam-policy-binding <YOUR_PROJECT_ID> \
   --member="serviceAccount:<YOUR_PROJECT_NUMBER>-compute@developer.gserviceaccount.com" \
   --role="roles/aiplatform.user"
 ```
+
+---
+
+## Event Pipeline (Pub/Sub Topics)
+
+The event ingestion pipeline uses two Pub/Sub topics:
+
+1.  **Incoming Expense Reports Topic (`expense-reports`)**: Receives JSON payloads representing new expense claims.
+2.  **Dead-Letter Topic (`expense-reports-dead-letter`)**: Captures messages that fail processing repeatedly so they are not lost.
+
+### Setup Commands
+To create these topics in your GCP project, run the following `gcloud` commands:
+
+```bash
+# 1. Create the dead-letter topic
+gcloud pubsub topics create expense-reports-dead-letter --project=<YOUR_PROJECT_ID>
+
+# 2. Create the main incoming topic
+gcloud pubsub topics create expense-reports --project=<YOUR_PROJECT_ID>
+```
+
