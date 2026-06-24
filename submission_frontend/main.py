@@ -1,8 +1,16 @@
 import os
+import sys
 import re
 import logging
 import json
+from pathlib import Path
 from dotenv import load_dotenv
+
+# Add project root to sys.path to resolve imports when running submission_frontend/main.py directly
+root_dir = str(Path(__file__).resolve().parent.parent)
+if root_dir not in sys.path:
+    sys.path.insert(0, root_dir)
+
 load_dotenv(dotenv_path=os.environ.get("ENV_FILE", ".env"))
 from typing import Optional, Any, List
 from fastapi import FastAPI, HTTPException, Request
@@ -41,6 +49,7 @@ location = os.environ.get("GOOGLE_CLOUD_LOCATION") or "us-east1"
 class ActionPayload(BaseModel):
     approved: bool
     interrupt_id: str
+    user_id: Optional[str] = "default-user"
 
 def get_session_service(parsed_project: str, parsed_location: str, engine_id: str):
     """Factory function to retrieve the appropriate ADK Session Service.
@@ -163,6 +172,7 @@ async def get_pending_approvals():
                     # Found unresolved manual input request
                     details = {
                         "session_id": s.id,
+                        "user_id": s.user_id,
                         "interrupt_id": unresolved_call.id,
                         "submitter": "Unknown",
                         "amount": 0.0,
@@ -278,28 +288,27 @@ async def handle_action(session_id: str, payload: ActionPayload):
             app_name="expense_agent"
         )
 
-        # To avoid duplicate parameter errors on the ADK runner, pass the resume payload directly as the dict value of the message argument:
-        message_payload = {
-            "role": "user",
-            "parts": [
-                {
-                    "function_response": {
-                        "id": payload.interrupt_id,
-                        "name": "adk_request_input",
-                        "response": {
+        message_payload = types.Content(
+            role="user",
+            parts=[
+                types.Part(
+                    function_response=types.FunctionResponse(
+                        id=payload.interrupt_id,
+                        name="adk_request_input",
+                        response={
                             "approved": payload.approved,
                             "human_approval": "approve" if payload.approved else "reject"
                         }
-                    }
-                }
+                    )
+                )
             ]
-        }
+        )
 
-        # Set user_id strictly to "default-user" to avoid session ownership mismatch errors
-        logger.info(f"Resuming session {session_id} for user default-user with payload: {message_payload}")
+        user_id = payload.user_id or "default-user"
+        logger.info(f"Resuming session {session_id} for user {user_id} with payload: {message_payload}")
         
         events = runner.run(
-            user_id="default-user",
+            user_id=user_id,
             session_id=session_id,
             new_message=message_payload,
             run_config=RunConfig(streaming_mode=StreamingMode.SSE)
@@ -1237,7 +1246,8 @@ async def get_dashboard():
                         },
                         body: JSON.stringify({
                             approved: isApprove,
-                            interrupt_id: interruptId
+                            interrupt_id: interruptId,
+                            user_id: pendingItems.find(i => i.session_id === sessionId)?.user_id || "default-user"
                         })
                     });
 

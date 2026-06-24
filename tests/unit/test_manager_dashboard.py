@@ -146,25 +146,29 @@ def test_api_action_resume(mock_service_class, mock_runner_class):
 
     # Verify Runner was initialized and run with correct parameters
     from unittest.mock import ANY
+    from google.genai import types
     mock_runner_class.assert_called_once()
+    
+    expected_message = types.Content(
+        role="user",
+        parts=[
+            types.Part(
+                function_response=types.FunctionResponse(
+                    id="call_xyz123",
+                    name="adk_request_input",
+                    response={
+                        "approved": True,
+                        "human_approval": "approve"
+                    }
+                )
+            )
+        ]
+    )
+    
     mock_runner_instance.run.assert_called_once_with(
         user_id="default-user",
         session_id="test-session-1",
-        new_message={
-            "role": "user",
-            "parts": [
-                {
-                    "function_response": {
-                        "id": "call_xyz123",
-                        "name": "adk_request_input",
-                        "response": {
-                            "approved": True,
-                            "human_approval": "approve"
-                        }
-                    }
-                }
-            ]
-        },
+        new_message=expected_message,
         run_config=ANY
     )
 
