@@ -189,3 +189,11 @@ Vibe-code a standalone manager-dashboard service in a new folder
 
 Make sure the UI looks highly polished and premium (colors, transitions, interactive approve/reject actions with loading spinners, and a modal that slides out to display the agent's final compliance review). Show me the main.py implementation when done.
 ```
+
+### Prompt 2: Deploy the Dashboard to Cloud Run
+
+```text
+Deploy the submission_frontend folder as "expense-manager-dashboard" to Cloud Run. Pass
+GOOGLE_CLOUD_PROJECT, and AGENT_RUNTIME_ID as environment variables, and configure the deployment to allow unauthenticated invocations so it is publicly reachable. After it deploys, grant the dashboard's runtime service account the necessary roles on the project so it can resume the Agent
+Runtime agent and query its sessions. Print the Dashboard URL when done.
+```
