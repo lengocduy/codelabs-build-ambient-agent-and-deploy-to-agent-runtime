@@ -4,6 +4,20 @@ A standalone dashboard service designed for financial managers to monitor pendin
 
 ---
 
+## Project Structure
+
+```text
+submission_frontend/
+├── docs/                      # Documentation assets and supplementary guides
+│   └── walkthrough.md         # Walkthrough specific to frontend operations
+├── Dockerfile                 # Container configuration for dashboard deployment
+├── main.py                    # FastAPI application, UI layouts, and session services
+├── pyproject.toml             # Python packages and configuration for the service
+└── README.md                  # This file
+```
+
+---
+
 ## Architecture Overview
 
 The dashboard is built on **FastAPI** and integrates with the **Google Agent Development Kit (ADK)** to manage and resume agent sessions. 
