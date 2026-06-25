@@ -1,6 +1,7 @@
 import os
 import sys
 import re
+import asyncio
 import logging
 import json
 from pathlib import Path
@@ -137,9 +138,7 @@ async def get_pending_approvals():
         session_service = get_session_service(parsed_project, parsed_location, engine_id)
 
         list_res = await session_service.list_sessions(app_name="expense_agent")
-        pending_items = []
-
-        for s in list_res.sessions:
+        async def fetch_and_process_session(s):
             try:
                 # Fetch full session with event history
                 fs = await session_service.get_session(
@@ -148,7 +147,7 @@ async def get_pending_approvals():
                     session_id=s.id
                 )
                 if not fs or not fs.events:
-                    continue
+                    return None
 
                 # Find all adk_request_input calls and responses
                 calls = {}
@@ -228,10 +227,15 @@ async def get_pending_approvals():
                             if m_exp:
                                 details["explanation"] = m_exp.group(1).strip()
 
-                    pending_items.append(details)
-
+                    return details
             except Exception as se:
                 logger.error(f"Error fetching session {s.id}: {se}", exc_info=True)
+            return None
+
+        # Fetch and process all sessions concurrently
+        tasks = [fetch_and_process_session(s) for s in list_res.sessions]
+        results = await asyncio.gather(*tasks)
+        pending_items = [r for r in results if r is not None]
 
         return {"status": "success", "pending": pending_items}
 

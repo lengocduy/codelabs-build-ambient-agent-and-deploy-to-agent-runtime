@@ -295,10 +295,10 @@ gcloud pubsub topics add-iam-policy-binding expense-reports-dead-letter \
 # 6. Create the OIDC push subscription delivering directly to the reasoning engine
 gcloud pubsub subscriptions create expense-reports-push \
   --topic=expense-reports \
-  --push-endpoint="https://us-east1-aiplatform.googleapis.com/v1/projects/<YOUR_PROJECT_ID>/locations/us-east1/reasoningEngines/<YOUR_REASONING_ENGINE_ID>:query" \
+  --push-endpoint="https://us-east1-aiplatform.googleapis.com/v1/projects/<YOUR_PROJECT_ID>/locations/us-east1/reasoningEngines/<YOUR_REASONING_ENGINE_ID>:streamQuery" \
   --push-no-wrapper \
   --push-auth-service-account="pubsub-invoker@<YOUR_PROJECT_ID>.iam.gserviceaccount.com" \
-  --push-auth-token-audience="https://us-east1-aiplatform.googleapis.com/v1/projects/<YOUR_PROJECT_ID>/locations/us-east1/reasoningEngines/<YOUR_REASONING_ENGINE_ID>:query" \
+  --push-auth-token-audience="https://us-east1-aiplatform.googleapis.com/v1/projects/<YOUR_PROJECT_ID>/locations/us-east1/reasoningEngines/<YOUR_REASONING_ENGINE_ID>:streamQuery" \
   --ack-deadline=600 \
   --dead-letter-topic=expense-reports-dead-letter \
   --max-delivery-attempts=5 \
