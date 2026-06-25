@@ -117,3 +117,29 @@ gcloud projects add-iam-policy-binding <YOUR_PROJECT_ID> \
   --member="serviceAccount:<YOUR_PROJECT_NUMBER>-compute@developer.gserviceaccount.com" \
   --role="roles/aiplatform.user"
 ```
+
+## Testing End-to-End
+
+> Remember to create a pubsub topic first. [Setup Pub/Sub](../README.md#pubsub-setup)
+
+To simulate and test different event ingestion pipelines and agent execution paths, you can trigger Pub/Sub messages directly using the Makefile commands from the root directory:
+
+1. **Auto-Approved Expense (Under $100)**:
+   Simulates sending a low-value expense report that will be automatically approved instantly.
+   ```bash
+   make pubsub-message-auto-approval
+   ```
+
+2. **Manual-Approval Expense (>= $100)**:
+   Simulates sending a high-value expense report that will pause the agent and wait for approval. Once sent, refresh the Manager Dashboard to see the pending claim.
+   ```bash
+   make pubsub-message-manual-approval
+   ```
+
+3. **Prompt Injection Escalation**:
+   Simulates a malicious prompt injection payload designed to bypass safety rules. The system will detect the security risk, bypass the model review, and escalate it straight to a human reviewer.
+   ```bash
+   make pubsub-message-prompt-injection
+   ```
+
+Use `make pubsub-topic` to create the topic if it doesn't exist. Use `make pubsub-test-message` to send a test message to the topic. Use `make pubsub-delete-topic` to delete the topic if it doesn't exist.
