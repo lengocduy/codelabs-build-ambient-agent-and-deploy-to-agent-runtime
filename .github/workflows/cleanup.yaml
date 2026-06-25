@@ -111,6 +111,16 @@ jobs:
               print(f"Error: {e}")
           EOF
 
+      - name: Clean up Staging Pub/Sub and Dashboard Frontend
+        if: github.event.inputs.target_env == 'staging_only' || github.event.inputs.target_env == 'all'
+        run: |
+          make pubsub-cleanup PROJECT_ID=${{ vars.STAGING_PROJECT_ID }} REGION=${{ vars.REGION }}
+
+      - name: Clean up Production Pub/Sub and Dashboard Frontend
+        if: github.event.inputs.target_env == 'production_only' || github.event.inputs.target_env == 'all'
+        run: |
+          make pubsub-cleanup PROJECT_ID=${{ vars.PROD_PROJECT_ID }} REGION=${{ vars.REGION }}
+
       - name: Setup Terraform
         if: github.event.inputs.target_env == 'all'
         uses: hashicorp/setup-terraform@v3

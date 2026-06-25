@@ -208,12 +208,18 @@ You can trigger the teardown process directly from the GitHub Actions console:
 
 This workflow will automatically:
 - Discover and delete all deployed Vertex AI Reasoning Engines (`ambient-expense-agent`) in both your staging and production environments.
+- Clean up all Pub/Sub topics, OIDC push subscriptions, invoker service accounts, and the deployed `expense-manager-dashboard` Cloud Run services.
 - Run `terraform destroy` to tear down all WIF pools, providers, GCS buckets, service accounts, and logging sinks.
 
 ##### Option B: Manual Command Line Cleanup
 If you prefer to perform the teardown manually in your local terminal:
 
-1. **Delete Vertex AI Reasoning Engines**:
+1. **Clean up Pub/Sub and Dashboard Frontend resources**:
+   ```bash
+   make pubsub-cleanup PROJECT_ID=<YOUR_PROJECT_ID> REGION=us-east1
+   ```
+
+2. **Delete Vertex AI Reasoning Engines**:
    ```bash
    # Undeploy Staging Engine
    gcloud beta ai reasoning-engines delete <STAGE_ENGINE_ID> --project=<STAGE_PROJECT_ID> --region=us-east1 --quiet
@@ -221,12 +227,14 @@ If you prefer to perform the teardown manually in your local terminal:
    # Undeploy Production Engine
    gcloud beta ai reasoning-engines delete <PROD_ENGINE_ID> --project=<PROD_PROJECT_ID> --region=us-east1 --quiet
    ```
-2. **Destroy Terraform Infrastructure**:
+
+3. **Destroy Terraform Infrastructure**:
    Navigate to the `cicd` directory and run:
    ```bash
    cd deployment/terraform/cicd
    terraform destroy -var-file=vars/env.tfvars -auto-approve
    ```
+
 
 #### 5. WIF Authentication Flow & Citations
 
@@ -262,9 +270,18 @@ The asynchronous event ingestion pipeline relies on Google Cloud Pub/Sub to deli
 
 1.  **Incoming Expense Reports Topic (`expense-reports`)**: Receives JSON payloads representing new expense claims.
 2.  **Dead-Letter Topic (`expense-reports-dead-letter`)**: Captures messages that fail processing repeatedly so they are not lost.
-3.  **OIDC-Authenticated Push Subscription (`expense-reports-push`)**: Delivers payloads directly to the Agent Runtime's `:query` REST endpoint. It runs in unwrapped payload mode (`--push-no-wrapper`) and retries up to 5 times before routing messages to the dead-letter topic.
+3.  **OIDC-Authenticated Push Subscription (`expense-reports-push`)**: Delivers payloads directly to the Agent Runtime's `:streamQuery` REST endpoint. It runs in unwrapped payload mode (`--push-no-wrapper`) and retries up to 5 times before routing messages to the dead-letter topic.
 
-### Setup Commands
+### Automated Setup
+
+The Pub/Sub pipeline is automatically provisioned during CI/CD deployments. To set up or update the pipeline resources manually, use the root Makefile shortcut:
+
+```bash
+make pubsub-setup PROJECT_ID=<YOUR_PROJECT_ID> REGION=us-east1 PROJECT_NUMBER=<YOUR_PROJECT_NUMBER>
+```
+
+### Manual Setup Commands
+
 
 To create the topics, service account, permissions, and push subscription in your GCP project, run the following `gcloud` commands in your terminal:
 

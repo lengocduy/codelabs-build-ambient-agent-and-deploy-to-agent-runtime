@@ -32,3 +32,15 @@ Runtime agent and query its sessions. Print the Dashboard URL when done.
 ```text
 What is the live HTTPS URL of the deployed "expense-manager-dashboard" Cloud Run service?
 ```
+
+## Prompt 4: Clean up
+
+```text
+Help me clean up the Google Cloud resources created in this lab. Please delete:
+  1. The Cloud Run service "expense-manager-dashboard".
+  2. The Pub/Sub subscription "expense-reports-push".
+  3. The Pub/Sub topics "expense-reports" and "expense-reports-dead-letter".
+  4. The service account "pubsub-invoker".
+
+Use gcloud commands with --quiet to execute the cleanup. Walk me through what you are deleting before running.
+```

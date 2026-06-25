@@ -1,6 +1,6 @@
 # Manager Expense Approval Dashboard
 
-A standalone dashboard service designed for financial managers to monitor pending expense claims, review AI-generated risk analyses, and approve or reject claims requiring manual intervention.
+A standalone dashboard service designed for financial managers to monitor pending expense claims, review AI-generated risk analyses, and approve or reject claims requiring manual intervention. The codelabs' hands-on [Vibecode and Deploy a Frontend for an ADK agent](https://codelabs.developers.google.com/vibecode-frontend-with-antigravity)
 
 ---
 
@@ -118,9 +118,16 @@ gcloud projects add-iam-policy-binding <YOUR_PROJECT_ID> \
   --role="roles/aiplatform.user"
 ```
 
+### 4. Cleanup & Teardown
+To clean up the deployed Cloud Run service along with the Pub/Sub topics, push subscriptions, and invoker service accounts, run:
+```bash
+make pubsub-cleanup PROJECT_ID=<YOUR_PROJECT_ID> REGION=us-east1
+```
+This will automatically delete the `expense-manager-dashboard` service, subscription, topics, and service account.
+
 ## Testing End-to-End
 
-> Remember to create a pubsub topic first. [Setup Pub/Sub](../README.md#pubsub-setup)
+> Remember to set up the Pub/Sub pipeline first. You can run the automated setup command `make pubsub-setup PROJECT_ID=<YOUR_PROJECT_ID> REGION=us-east1 PROJECT_NUMBER=<YOUR_PROJECT_NUMBER>`.
 
 To simulate and test different event ingestion pipelines and agent execution paths, you can trigger Pub/Sub messages directly using the Makefile commands from the root directory:
 
@@ -141,5 +148,3 @@ To simulate and test different event ingestion pipelines and agent execution pat
    ```bash
    make pubsub-message-prompt-injection
    ```
-
-Use `make pubsub-topic` to create the topic if it doesn't exist. Use `make pubsub-test-message` to send a test message to the topic. Use `make pubsub-delete-topic` to delete the topic if it doesn't exist.
