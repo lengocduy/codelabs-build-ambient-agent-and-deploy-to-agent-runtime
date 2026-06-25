@@ -15,12 +15,12 @@
 name: Deploy Manager Dashboard
 
 on:
-  push:
-    branches:
-      - main
-      - ci/end-to-end-interaction
-    paths:
-      - 'submission_frontend/**'
+  # Uncomment if we want to deploy on staging from main branch
+  # push:
+  #   branches:
+  #     - main
+  #   paths:
+  #     - 'submission_frontend/**'
   workflow_dispatch:
     inputs:
       environment:
