@@ -21,6 +21,7 @@ on:
     paths:
       - 'expense_agent/**'
       - 'data_ingestion/**'
+      - 'submission_frontend/**'
       - 'tests/**'
       - 'deployment/**'
       - 'uv.lock'
