@@ -15,14 +15,24 @@
 
 set -euo pipefail
 
-if [ "$#" -ne 1 ]; then
-    echo "Usage: $0 <PROJECT_ID>"
+if [ "$#" -ne 2 ]; then
+    echo "Usage: $0 <PROJECT_ID> <REGION>"
     exit 1
 fi
 
 PROJECT_ID="$1"
+REGION="$2"
 
-echo "Cleaning up Pub/Sub resources in project: ${PROJECT_ID}..."
+echo "Cleaning up resources in project: ${PROJECT_ID} (region: ${REGION})..."
+
+# 0. Delete Cloud Run Service if it exists
+if gcloud run services describe expense-manager-dashboard --project="${PROJECT_ID}" --region="${REGION}" >/dev/null 2>&1; then
+    echo "Deleting Cloud Run service: expense-manager-dashboard..."
+    gcloud run services delete expense-manager-dashboard --project="${PROJECT_ID}" --region="${REGION}" --quiet
+else
+    echo "Cloud Run service expense-manager-dashboard does not exist."
+fi
+
 
 # 1. Delete push subscription if it exists
 if gcloud pubsub subscriptions describe expense-reports-push --project="${PROJECT_ID}" >/dev/null 2>&1; then

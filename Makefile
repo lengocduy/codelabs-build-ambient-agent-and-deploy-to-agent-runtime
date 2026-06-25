@@ -92,13 +92,14 @@ pubsub-setup:
 	fi
 	bash scripts/setup_pubsub.sh "$(PROJECT_ID)" "$(REGION)" "$(PROJECT_NUMBER)"
 
-# Clean up Pub/Sub topics, IAM bindings, and push subscription on GCP
+# Clean up Pub/Sub resources and Dashboard Frontend on GCP
 pubsub-cleanup:
-	@if [ -z "$(PROJECT_ID)" ]; then \
+	@if [ -z "$(PROJECT_ID)" ] || [ -z "$(REGION)" ]; then \
 		echo "Error: Missing parameters."; \
-		echo "Usage: make pubsub-cleanup PROJECT_ID=<project_id>"; \
+		echo "Usage: make pubsub-cleanup PROJECT_ID=<project_id> REGION=<region>"; \
 		exit 1; \
 	fi
-	bash scripts/cleanup_pubsub.sh "$(PROJECT_ID)"
+	bash scripts/cleanup_pubsub.sh "$(PROJECT_ID)" "$(REGION)"
+
 
 
