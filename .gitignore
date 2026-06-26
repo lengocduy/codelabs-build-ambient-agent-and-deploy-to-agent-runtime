@@ -210,3 +210,6 @@ deployment_metadata.json
 
 # SDK/Agent Evaluation Outputs
 /artifacts/
+
+# The sqlite DB supports testing locally
+shared_sessions.db
