@@ -85,12 +85,12 @@ pubsub-message-prompt-injection:
 
 # Provision Pub/Sub topics, IAM roles, and wire push subscription to the reasoning engine on GCP
 pubsub-setup:
-	@if [ -z "$(PROJECT_ID)" ] || [ -z "$(REGION)" ] || [ -z "$(PROJECT_NUMBER)" ]; then \
+	@if [ -z "$(PROJECT_ID)" ] || [ -z "$(REGION)" ] || [ -z "$(PROJECT_NUMBER)" ] || [ -z "$(REASONING_ENGINE_ID)" ]; then \
 		echo "Error: Missing parameters."; \
-		echo "Usage: make pubsub-setup PROJECT_ID=<project_id> REGION=<region> PROJECT_NUMBER=<project_number>"; \
+		echo "Usage: make pubsub-setup PROJECT_ID=<project_id> REGION=<region> PROJECT_NUMBER=<project_number> REASONING_ENGINE_ID=<reasoning_engine_id>"; \
 		exit 1; \
 	fi
-	bash scripts/setup_pubsub.sh "$(PROJECT_ID)" "$(REGION)" "$(PROJECT_NUMBER)"
+	bash scripts/setup_pubsub.sh "$(PROJECT_ID)" "$(REGION)" "$(PROJECT_NUMBER)" "$(REASONING_ENGINE_ID)"
 
 # Clean up Pub/Sub resources and Dashboard Frontend on GCP
 pubsub-cleanup:

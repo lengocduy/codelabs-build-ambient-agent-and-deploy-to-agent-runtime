@@ -78,5 +78,7 @@ jobs:
             --update-env-vars="COMMIT_SHA=${{ github.sha }},LOGS_BUCKET_NAME=${{ vars.LOGS_BUCKET_NAME_PROD }},GOOGLE_GENAI_USE_VERTEXAI=True,GOOGLE_CLOUD_LOCATION=global"
 
       - name: Setup Event Ingestion Pipeline (Pub/Sub)
-        run: make pubsub-setup PROJECT_ID="${{ vars.PROD_PROJECT_ID }}" REGION="${{ vars.REGION }}" PROJECT_NUMBER="${{ vars.GCP_PROJECT_NUMBER }}"
+        run: |
+          ENGINE_ID=$(jq -r '.remote_agent_runtime_id' deployment_metadata.json)
+          make pubsub-setup PROJECT_ID="${{ vars.PROD_PROJECT_ID }}" REGION="${{ vars.REGION }}" PROJECT_NUMBER="${{ vars.GCP_PROJECT_NUMBER }}" REASONING_ENGINE_ID="${ENGINE_ID}"
 

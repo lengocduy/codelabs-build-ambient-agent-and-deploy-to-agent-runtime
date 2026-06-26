@@ -15,25 +15,15 @@
 
 set -euo pipefail
 
-if [ "$#" -ne 3 ]; then
-    echo "Usage: $0 <PROJECT_ID> <REGION> <PROJECT_NUMBER>"
+if [ "$#" -ne 4 ]; then
+    echo "Usage: $0 <PROJECT_ID> <REGION> <PROJECT_NUMBER> <REASONING_ENGINE_ID>"
     exit 1
 fi
 
 PROJECT_ID="$1"
 REGION="$2"
 PROJECT_NUMBER="$3"
-
-if [ ! -f "deployment_metadata.json" ]; then
-    echo "Error: deployment_metadata.json not found in the current directory."
-    exit 1
-fi
-
-REASONING_ENGINE_ID=$(jq -r '.remote_agent_runtime_id' deployment_metadata.json)
-if [ -z "${REASONING_ENGINE_ID}" ] || [ "${REASONING_ENGINE_ID}" = "null" ]; then
-    echo "Error: Could not resolve remote_agent_runtime_id from deployment_metadata.json."
-    exit 1
-fi
+REASONING_ENGINE_ID="$4"
 
 echo "Connecting Pub/Sub push subscription to Agent Runtime ID: ${REASONING_ENGINE_ID}"
 
@@ -65,6 +55,8 @@ if gcloud pubsub subscriptions describe expense-reports-push --project="${PROJEC
   echo "Push subscription already exists. Updating endpoint..."
   gcloud pubsub subscriptions update expense-reports-push \
     --push-endpoint="${PUSH_ENDPOINT}" \
+    --push-no-wrapper \
+    --push-auth-service-account="pubsub-invoker@${PROJECT_ID}.iam.gserviceaccount.com" \
     --push-auth-token-audience="${PUSH_ENDPOINT}" \
     --project="${PROJECT_ID}"
 else
