@@ -95,8 +95,12 @@ make fe-production
 
 The dashboard is deployed on Cloud Run as `expense-manager-dashboard`.
 
-### 1. Build and Deploy
-The container is built from the project root (to include the `expense_agent` package dependency) and deployed to `us-east1` with unauthenticated invocations allowed:
+> 💡 **Automated Deployment:** There is a dedicated GitHub Actions workflow, [.github/workflows/deploy-dashboard.yaml](file:///Volumes/Investor/Learning/Google%205-Day%20AI%20Agents%20Intensive%20Course/ambient-expense-agent/.github/workflows/deploy-dashboard.yaml), to deploy the dashboard automatically. You can trigger it manually from the **Actions** tab in GitHub, select target environments (`staging` or `production`), and specify the Reasoning Engine ID to hook up to.
+
+### 1. Build and Deploy (Manual)
+
+If you need to deploy manually from your terminal, run the following command from the project root (to include the `expense_agent` package dependency) to deploy to `us-east1` with unauthenticated invocations allowed:
+
 ```bash
 gcloud run deploy expense-manager-dashboard \
   --source . \
