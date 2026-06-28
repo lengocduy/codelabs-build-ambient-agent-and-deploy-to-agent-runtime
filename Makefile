@@ -1,4 +1,4 @@
-.PHONY: help install playground run test generate-traces grade fe-local fe-staging fe-production run-all-local clean pubsub-message-auto-approval pubsub-message-manual-approval pubsub-message-prompt-injection pubsub-setup pubsub-cleanup gcp-assets-cleanup bootstrap-cicd
+.PHONY: help install playground run test generate-traces grade fe-local fe-staging fe-production run-all-local clean pubsub-message-auto-approval pubsub-message-manual-approval pubsub-message-prompt-injection pubsub-setup pubsub-cleanup gcp-assets-cleanup bootstrap-cicd destroy-cicd
 
 # Default goal shows help
 help:
@@ -20,7 +20,9 @@ help:
 	@echo "  make pubsub-cleanup                   - Cleanup Pub/Sub topics, IAM bindings, and push subscription on GCP"
 	@echo "  make gcp-assets-cleanup               - Cleanup GCS buckets and Artifact Registry repositories on GCP"
 	@echo "  make bootstrap-cicd                   - Run initial CI/CD bootstrapping locally (setup WIF, IAM, state buckets)"
+	@echo "  make destroy-cicd                     - Destroy GCP infrastructure and WIF configurations created by Terraform locally"
 	@echo "  make clean                            - Clean up build artifacts and caches"
+
 
 
 
@@ -116,3 +118,7 @@ gcp-assets-cleanup:
 # Run initial CI/CD bootstrapping locally to set up WIF provider, pool, IAM roles, and state buckets
 bootstrap-cicd:
 	agents-cli infra cicd --apply
+
+# Destroy all GCP infrastructure and WIF configurations created by Terraform locally (Run locally by admin only)
+destroy-cicd:
+	cd deployment/terraform/cicd && terraform destroy -var-file=vars/env.tfvars -auto-approve

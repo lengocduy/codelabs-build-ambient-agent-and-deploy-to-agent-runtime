@@ -120,19 +120,3 @@ jobs:
         if: github.event.inputs.target_env == 'production_only' || github.event.inputs.target_env == 'all'
         run: |
           make pubsub-cleanup PROJECT_ID=${{ vars.PROD_PROJECT_ID }} REGION=${{ vars.REGION }}
-
-      - name: Setup Terraform
-        if: github.event.inputs.target_env == 'all'
-        uses: hashicorp/setup-terraform@v3
-
-      - name: Terraform Init
-        if: github.event.inputs.target_env == 'all'
-        run: |
-          cd deployment/terraform/cicd
-          terraform init
-
-      - name: Terraform Destroy
-        if: github.event.inputs.target_env == 'all'
-        run: |
-          cd deployment/terraform/cicd
-          terraform destroy -var-file=vars/env.tfvars -auto-approve

@@ -60,6 +60,9 @@ agents-cli infra cicd \
 *   **Production Pipeline (`deploy-to-prod.yaml`)**: Initiated immediately after the Staging pipeline succeeds.
     *   Pauses for manual review/gate approval under GitHub Environment (`production`).
     *   Deploys the agent to the Production environment on Vertex AI Agent Runtime.
+*   **Dashboard Pipeline (`deploy-dashboard.yaml`)**: Triggered automatically on changes to the `submission_frontend/` directory or manually. Builds the Manager Dashboard container, uploads it to Artifact Registry, deploys it to Cloud Run, and wires the Pub/Sub push subscription to the reasoning engine.
+*   **Teardown Pipeline (`cleanup.yaml`)**: Triggered manually from the GitHub Actions console. Undeploys Vertex AI Reasoning Engines, deletes the `expense-manager-dashboard` Cloud Run service, and tears down Pub/Sub ingestion lines (topics and push subscriptions) in the selected environment.
+
 
 #### C. GitHub Secrets & Variables Reference
 If you need to configure your repository manually, add the following under **Settings > Secrets and variables > Actions**:
@@ -93,8 +96,8 @@ Trigger the teardown process directly from the GitHub Actions console:
 
 This workflow will automatically:
 *   Discover and delete all deployed Vertex AI Reasoning Engines in both environments.
-*   Clean up all Pub/Sub topics, OIDC push subscriptions, invoker service accounts, and the deployed `expense-manager-dashboard` Cloud Run services.
-*   Run `terraform destroy` to tear down WIF pools, providers, GCS buckets, service accounts, and logging sinks.
+*   Clean up all Pub/Sub topics, OIDC push subscriptions, and the deployed `expense-manager-dashboard` Cloud Run services.
+*   *(Note: For security reasons, the automated pipeline does not delete GCS buckets or core WIF/IAM pools. You must purge these locally).*
 
 #### Option B: Manual Command Line Cleanup
 If you prefer to perform the teardown manually in your local terminal:
@@ -103,26 +106,43 @@ If you prefer to perform the teardown manually in your local terminal:
     ```bash
     make pubsub-cleanup PROJECT_ID=<YOUR_PROJECT_ID> REGION=us-east1
     ```
-2.  **Delete Vertex AI Reasoning Engines**:
+2.  **Delete GCS Storage Buckets & Artifact Registry repositories**:
     ```bash
-    # Undeploy Staging Engine
-    gcloud beta ai reasoning-engines delete <STAGE_ENGINE_ID> --project=<STAGE_PROJECT_ID> --region=us-east1 --quiet
-
-    # Undeploy Production Engine
-    gcloud beta ai reasoning-engines delete <PROD_ENGINE_ID> --project=<PROD_PROJECT_ID> --region=us-east1 --quiet
+    make gcp-assets-cleanup PROJECT_ID=<YOUR_PROJECT_ID> REGION=us-east1
     ```
-3.  **Destroy Terraform Infrastructure**:
-    Navigate to the `cicd` directory and run:
+3.  **Destroy Terraform IAM & WIF Infrastructure**:
     ```bash
-    cd deployment/terraform/cicd
-    terraform destroy -var-file=vars/env.tfvars -auto-approve
+    make destroy-cicd
     ```
 
 ---
 
-### 4. WIF Authentication Flow
+### 4. Env Deployment & Teardown Lifecycle Order
+
+Always follow this exact sequence to prevent dependency lockouts:
+
+#### A. Deployment Progression
+```mermaid
+graph TD
+    A[1. make bootstrap-cicd <br>Local Admin WIF Setup] --> B[2. staging.yaml <br>GitHub Actions Agent Deploy]
+    B --> C[3. deploy-dashboard.yaml <br>GitHub Actions Dashboard Deploy]
+```
+
+#### B. Teardown Progression
+```mermaid
+graph TD
+    A[1. cleanup.yaml <br>GitHub Actions Operational Teardown] --> B[2. make gcp-assets-cleanup <br>Local Storage/Registry Purge]
+    B --> C[3. make destroy-cicd <br>Local Admin WIF/IAM Teardown]
+```
+> [!IMPORTANT]
+> Running `cleanup.yaml` on GitHub Actions **must** happen before running `make destroy-cicd`. If you destroy the WIF pool first, the GitHub runner will immediately lose its OIDC credentials and fail to execute the cleanup workflow.
+
+---
+
+### 5. WIF Authentication Flow
 
 For a detailed diagram and walkthrough of the Workload Identity Federation (WIF) authentication flow and sequence of token exchanges, refer to [WIF Authentication Flow in GCP Deployment Architecture](gcp_deployment_architecture.md#1-authentication-oidc-wif).
+
 
 ---
 
