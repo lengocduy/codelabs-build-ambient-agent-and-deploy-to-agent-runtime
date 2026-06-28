@@ -61,9 +61,10 @@ fi
 SA_EMAIL="pubsub-invoker@${PROJECT_ID}.iam.gserviceaccount.com"
 if gcloud iam service-accounts describe "${SA_EMAIL}" --project="${PROJECT_ID}" >/dev/null 2>&1; then
     echo "Deleting service account: ${SA_EMAIL}..."
-    gcloud iam service-accounts delete "${SA_EMAIL}" --project="${PROJECT_ID}" --quiet
+    gcloud iam service-accounts delete "${SA_EMAIL}" --project="${PROJECT_ID}" --quiet || echo "Warning: Failed to delete service account ${SA_EMAIL}. This operation may require manual deletion by a project administrator due to restricted CI/CD permissions."
 else
     echo "Service account ${SA_EMAIL} does not exist."
 fi
+
 
 echo "Pub/Sub resources cleanup complete."
