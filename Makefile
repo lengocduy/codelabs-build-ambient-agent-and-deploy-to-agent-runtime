@@ -1,4 +1,4 @@
-.PHONY: help install playground run test generate-traces grade fe-local fe-staging fe-production run-all-local clean pubsub-message-auto-approval pubsub-message-manual-approval pubsub-message-prompt-injection pubsub-setup pubsub-cleanup
+.PHONY: help install playground run test generate-traces grade fe-local fe-staging fe-production run-all-local clean pubsub-message-auto-approval pubsub-message-manual-approval pubsub-message-prompt-injection pubsub-setup pubsub-cleanup gcp-assets-cleanup bootstrap-cicd
 
 # Default goal shows help
 help:
@@ -18,7 +18,11 @@ help:
 	@echo "  make pubsub-message-prompt-injection  - Publish a prompt-injection attack test message to Pub/Sub"
 	@echo "  make pubsub-setup                     - Setup Pub/Sub topics, IAM bindings, and push subscription on GCP"
 	@echo "  make pubsub-cleanup                   - Cleanup Pub/Sub topics, IAM bindings, and push subscription on GCP"
+	@echo "  make gcp-assets-cleanup               - Cleanup GCS buckets and Artifact Registry repositories on GCP"
+	@echo "  make bootstrap-cicd                   - Run initial CI/CD bootstrapping locally (setup WIF, IAM, state buckets)"
 	@echo "  make clean                            - Clean up build artifacts and caches"
+
+
 
 # Install project dependencies using uv
 install:
@@ -100,6 +104,15 @@ pubsub-cleanup:
 		exit 1; \
 	fi
 	bash scripts/cleanup_pubsub.sh "$(PROJECT_ID)" "$(REGION)"
+# Clean up GCS buckets and Artifact Registry repositories on GCP
+gcp-assets-cleanup:
+	@if [ -z "$(PROJECT_ID)" ] || [ -z "$(REGION)" ]; then \
+		echo "Error: Missing parameters."; \
+		echo "Usage: make gcp-assets-cleanup PROJECT_ID=<project_id> REGION=<region>"; \
+		exit 1; \
+	fi
+	bash scripts/cleanup_gcp_assets.sh "$(PROJECT_ID)" "$(REGION)"
 
-
-
+# Run initial CI/CD bootstrapping locally to set up WIF provider, pool, IAM roles, and state buckets
+bootstrap-cicd:
+	agents-cli infra cicd --apply
